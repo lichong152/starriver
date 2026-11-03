@@ -195,6 +195,7 @@
       <a href="#install">安装</a>
       <a href="#restore">换回原桌面</a>
       <a href="#faq">常见问题</a>
+      <a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
   </div>
 </nav>
@@ -210,7 +211,7 @@
     </p>
     <div class="cta">
       <a class="btn primary" href="#install">查看安装方法</a>
-      <a class="btn ghost" href="#download">获取 APK</a>
+      <a class="btn ghost" href="#download">下载 APK</a>
     </div>
     <div class="badges">
       <span>Android 5.0+（守护功能建议 9.0+）</span>
@@ -328,12 +329,15 @@
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
     </table>
-    <div class="callout" style="margin-top:28px">
-      <b>获取文件：</b>APK 不打这个网站上——两个包共 52 MB，超过免费静态托管的单次发布上限。
-      让帮你安装的 AI 直接从项目目录取：<code>starriver/app/build/outputs/apk/standard/release/app-standard-release.apk</code>
-      和 <code>…/guard/release/app-guard-release.apk</code>。也可以自行编译：
-      <code>./gradlew assembleStandardRelease</code>（用 <code>assembleGuardRelease</code> 出守护版）。
+    <div class="cta" style="justify-content:flex-start;margin:30px 0 8px">
+      <a class="btn primary" href="https://github.com/lichong152/starriver/releases/latest/download/app-standard-release.apk">下载标准版 · 26 MB</a>
+      <a class="btn ghost" href="https://github.com/lichong152/starriver/releases/latest/download/app-guard-release.apk">下载守护版 · 26 MB</a>
+      <a class="btn ghost" href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">全部版本 ↗</a>
     </div>
+    <p class="hint">
+      链接指向 GitHub Releases 的 <code>latest</code> 通道——发布新版本后自动指向最新包，本页不需要跟着改。
+      想自己编译：<code>./gradlew assembleStandardRelease</code>（<code>assembleGuardRelease</code> 出守护版）。
+    </p>
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
@@ -436,8 +440,8 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
     <div class="step">
       <h3><span class="no">一条指令</span> · 让 AI 自己做完</h3>
       <p>不想自己敲命令？复制下面这段，发给你电脑上的 AI。它会读执行手册，在你的电脑上亲自安装、验证、并把原始输出贴给你。</p>
-      <pre><button class="copy">复制</button>请阅读星川项目 starriver/AGENTS.md（执行手册），在这台电脑上把星川装到我的电视上。
-电视的四段数字：（把电视 IP 填在这里）
+      <pre><button class="copy">复制</button>请阅读 https://github.com/lichong152/starriver/blob/main/AGENTS.md（星川安装执行手册），
+在这台电脑上把星川装到我的电视上。电视的四段数字：（把电视 IP 填在这里）
 
 要求：
 1. 先做第 2 节「记录现场」，把 7 条命令的原始输出原样贴给我，再动手安装。
@@ -475,7 +479,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
     <span class="kicker">Restore</span>
     <h2>换回原来的桌面。可以换回去。</h2>
     <p class="lead">复制下面的文字，发给帮你安装的那个 AI：</p>
-    <pre style="margin-top:24px"><button class="copy">复制</button>请阅读星川项目 AGENTS.md 里第 8 节「回滚」，在这台电脑上亲自做。
+    <pre style="margin-top:24px"><button class="copy">复制</button>请阅读 https://github.com/lichong152/starriver/blob/main/AGENTS.md 里第 8 节「回滚」，在这台电脑上亲自做。
 电视上的四段数字：（把电视 IP 填在这里）
 把画着房子的键换回电视出厂时的主屏幕。先不要卸载星川。
 不要猜原来的主屏幕叫什么名字——用安装时第 2 步记录的组件。
@@ -563,6 +567,10 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 <footer>
   <div class="wrap">
     <p>星川 Star River TV · v1.0.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
+       下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
+       安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
+       图片版权：<a href="https://github.com/lichong152/starriver/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a></p>
     <p>本站为纯静态页面，所有实拍图来自真机 adb screencap 原图。所有「通过」结论均有对应命令原始输出；未实测的项目如实标注「未测」。</p>
     <p>独立个人项目，与任何电视厂商无关。「Android」是 Google LLC 的商标。安装流程不会停用、卸载任何系统应用，也不会远程重启你的电视——除非你明确同意。</p>
   </div>

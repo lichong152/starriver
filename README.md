@@ -160,7 +160,15 @@ focusable 锚点，所有方向键在 `Home.kt` 里按 index 集中分发，网�
 
 - 本地预览：直接打开 `site/index.html`
 - 改完部署：`site/` 整目录上传到任意静态托管即可（EdgeOne Pages / GitHub Pages / Cloudflare Pages）
-- 两个 APK（各约 26 MB）**不放进站点**——超过免费静态托管的单次发布上限，按页面「获取文件」一段的路径自取
+- 两个 APK（各约 26 MB）发布在 [GitHub Releases](https://github.com/lichong152/starriver/releases)，
+  页面下载按钮指向 `releases/latest/download/<文件名>`，发新版本后自动生效，不需要改页面
+
+## 下载
+
+| 形态 | 文件 | 适用 |
+|---|---|---|
+| 标准版 | [app-standard-release.apk](https://github.com/lichong152/starriver/releases/latest/download/app-standard-release.apk) | 默认选它，声明 HOME |
+| 守护版 | [app-guard-release.apk](https://github.com/lichong152/starriver/releases/latest/download/app-guard-release.apk) | 固件拒绝声明 HOME 的 APK 时用 |
 
 ## 许可
 
