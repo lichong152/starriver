@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">星川</string>
+
+    <!-- 桌面守护（无障碍服务） -->
+    <string name="guard_label">星川桌面守护</string>
+    <string name="guard_summary">原厂桌面回到前台时，自动切回星川</string>
+    <string name="guard_description">星川用它把桌面留在前台。开启后，当电视固件把自家的桌面拉到前台时，星川会立刻切回来。它只识别前台是哪个应用，不读取屏幕内容、不记录任何文字。不需要时可随时在系统无障碍设置里关闭。</string>
+</resources>

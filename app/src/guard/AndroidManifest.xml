@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- guard 形态：不声明 HOME，规避国产固件对第三方桌面的安装拦截 -->
+    <application />
+</manifest>

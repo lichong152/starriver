@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星川 Star River TV — 让电视桌面，回到它该有的样子。</title>
+<meta name="description" content="星川是一个 Android TV 桌面（Launcher）：真实应用图标、自然风光壁纸轮播、液态玻璃 Dock、桌面守护。不需要 Root，完全离线，随时可回退。">
+<style>
+  :root{
+    --bg:#070b14;
+    --bg2:#0b1220;
+    --panel:#0e1524;
+    --line:rgba(148,180,255,.14);
+    --text:#dfe8f8;
+    --muted:#9fb0cc;
+    --faint:#6d7f9e;
+    --accent:#6ea8ff;
+    --accent2:#8ad0ff;
+    --ok:#5fd39a;
+    --warn:#f0b357;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,pre,kbd{font-family:ui-monospace,"Cascadia Code",Consolas,"JetBrains Mono",monospace}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  section{padding:88px 0;border-top:1px solid var(--line)}
+  .kicker{
+    display:inline-block;font-size:12px;letter-spacing:.35em;color:var(--accent2);
+    text-transform:uppercase;margin-bottom:14px;
+  }
+  h2{font-size:34px;font-weight:700;letter-spacing:.01em;margin-bottom:12px}
+  .lead{color:var(--muted);font-size:17px;max-width:680px}
+  .num{font-size:13px;color:var(--faint);margin-right:10px;font-variant-numeric:tabular-nums}
+
+  /* ---------- nav ---------- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(7,11,20,.72);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex;align-items:center;gap:26px;height:58px}
+  .logo{font-weight:700;font-size:16px;color:var(--text);letter-spacing:.04em}
+  .logo span{color:var(--accent)}
+  nav .links{margin-left:auto;display:flex;gap:22px;font-size:14px}
+  nav .links a{color:var(--muted)}
+  nav .links a:hover{color:var(--text);text-decoration:none}
+  @media (max-width:720px){nav .links{display:none}}
+
+  /* ---------- hero ---------- */
+  header.hero{
+    position:relative;overflow:hidden;
+    padding:120px 0 90px;
+    background:
+      radial-gradient(1200px 500px at 70% -10%, rgba(110,168,255,.16), transparent 60%),
+      radial-gradient(900px 420px at 15% 110%, rgba(138,208,255,.10), transparent 60%),
+      linear-gradient(180deg,#070b14 0%,#0a1120 100%);
+  }
+  /* 星川：缓缓流动的星河 */
+  .stars{position:absolute;inset:0;pointer-events:none;opacity:.55}
+  .stars i{
+    position:absolute;width:2px;height:2px;border-radius:50%;
+    background:#cfe4ff;animation:tw 4s ease-in-out infinite;
+  }
+  @keyframes tw{0%,100%{opacity:.15}50%{opacity:.9}}
+  .hero .wrap{position:relative;text-align:center}
+  .hero h1{
+    font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:.01em;line-height:1.25;
+    margin-bottom:18px;
+  }
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,#6ea8ff,#8ad0ff 60%,#b7e3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.sub{color:var(--muted);font-size:18px;max-width:720px;margin:0 auto 30px}
+  .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+  .btn{
+    display:inline-block;padding:12px 26px;border-radius:999px;font-size:15px;font-weight:600;
+    border:1px solid var(--line);transition:.2s;
+  }
+  .btn.primary{background:linear-gradient(135deg,#3f7bff,#6ea8ff);color:#fff;border-color:transparent}
+  .btn.primary:hover{filter:brightness(1.1);text-decoration:none;transform:translateY(-1px)}
+  .btn.ghost{color:var(--text)}
+  .btn.ghost:hover{border-color:var(--accent);text-decoration:none}
+  .badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .badges span{padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(14,21,36,.6)}
+  /* TV 模型 */
+  .tv{
+    margin:56px auto 0;max-width:860px;border-radius:18px;
+    border:1px solid rgba(148,180,255,.22);
+    box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 8px #05070d,0 0 0 9px rgba(148,180,255,.15);
+    overflow:hidden;background:#000;
+  }
+  .tv img{display:block;width:100%;height:auto}
+  .shot-cap{font-size:12.5px;color:var(--faint);margin-top:14px;text-align:center}
+  .trust{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:44px;font-size:14px;color:var(--muted)}
+  .trust b{color:var(--text)}
+
+  /* ---------- features ---------- */
+  .feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:44px}
+  .card{
+    background:linear-gradient(180deg,rgba(20,30,52,.55),rgba(14,21,36,.55));
+    border:1px solid var(--line);border-radius:var(--radius);padding:28px 26px;
+  }
+  .card .no{font-size:13px;color:var(--accent2);letter-spacing:.2em;margin-bottom:14px}
+  .card h3{font-size:19px;margin-bottom:10px}
+  .card p{font-size:14.5px;color:var(--muted)}
+  .card p b{color:var(--text);font-weight:600}
+
+  /* ---------- shots ---------- */
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:44px}
+  .shot{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#000}
+  .shot img{display:block;width:100%;height:auto;transition:.3s}
+  .shot:hover img{transform:scale(1.02)}
+  .shot .cap{padding:12px 16px;font-size:13.5px;color:var(--muted);background:var(--panel)}
+  .shot .cap b{color:var(--text)}
+
+  /* ---------- install ---------- */
+  .steps{margin-top:44px;display:flex;flex-direction:column;gap:22px}
+  .step{border:1px solid var(--line);border-radius:var(--radius);background:rgba(14,21,36,.5);padding:26px 28px}
+  .step h3{font-size:18px;margin-bottom:8px}
+  .step h3 .no{color:var(--accent2)}
+  .step p{font-size:14.5px;color:var(--muted);margin-bottom:10px}
+  .step p b{color:var(--text)}
+  pre{
+    background:#05080f;border:1px solid var(--line);border-radius:10px;
+    padding:34px 18px 18px;font-size:13px;line-height:1.8;overflow-x:auto;color:#c8d8f5;
+    position:relative;
+  }
+  pre .cm{color:#5d7396}
+  .copy{
+    position:absolute;top:8px;right:8px;font-size:12px;color:var(--muted);
+    background:rgba(20,30,52,.9);border:1px solid var(--line);border-radius:6px;
+    padding:3px 10px;cursor:pointer;
+  }
+  .copy:hover{color:var(--text);border-color:var(--accent)}
+  .callout{
+    border-left:3px solid var(--warn);background:rgba(240,179,87,.07);
+    padding:14px 18px;border-radius:0 10px 10px 0;font-size:14px;color:var(--muted);margin:14px 0;
+  }
+  .callout b{color:var(--warn)}
+  .callout.ok{border-color:var(--ok);background:rgba(95,211,154,.07)}
+  .callout.ok b{color:var(--ok)}
+
+  /* ---------- glossary ---------- */
+  .gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;margin-top:40px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--line)}
+  .gloss>div{padding:18px 22px;background:#0b1220}
+  .gloss dt{font-size:14.5px;font-weight:600;margin-bottom:4px}
+  .gloss dd{font-size:13px;color:var(--muted)}
+
+  /* ---------- record table ---------- */
+  table{width:100%;border-collapse:collapse;margin-top:36px;font-size:14px}
+  th,td{padding:12px 16px;border:1px solid var(--line);text-align:left}
+  th{background:rgba(20,30,52,.6);font-weight:600}
+  td{color:var(--muted)}
+  td b{color:var(--text)}
+  .pass{color:var(--ok);font-weight:600}
+  .untested{color:var(--faint)}
+
+  /* ---------- faq ---------- */
+  .faq{margin-top:40px}
+  details{border-bottom:1px solid var(--line);padding:6px 0}
+  details summary{
+    cursor:pointer;list-style:none;padding:16px 4px;font-size:16px;font-weight:600;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";color:var(--accent);font-size:20px;transition:.2s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details .ans{padding:0 4px 18px;font-size:14.5px;color:var(--muted);max-width:820px}
+  details .ans b{color:var(--text)}
+  details .ans code{background:#05080f;border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:12.5px}
+
+  /* ---------- footer ---------- */
+  footer{padding:56px 0 72px;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
+  footer .wrap p{margin-bottom:10px;max-width:820px}
+
+  .hint{font-size:13px;color:var(--faint);margin-top:10px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo">星川<span>·</span>TV</div>
+    <div class="links">
+      <a href="#features">特性</a>
+      <a href="#shots">实拍</a>
+      <a href="#install">安装</a>
+      <a href="#restore">换回原桌面</a>
+      <a href="#faq">常见问题</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="stars" id="stars"></div>
+  <div class="wrap">
+    <h1>让电视桌面，<br><em>回到它该有的样子。</em></h1>
+    <p class="sub">
+      把堆满推荐位和弹窗的原厂桌面，换成一个安静的入口：真实的应用图标、会流动的自然风光壁纸、
+      沉底的液态玻璃 Dock。星川把客厅那块屏幕，还给你自己。
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="#install">查看安装方法</a>
+      <a class="btn ghost" href="#download">获取 APK</a>
+    </div>
+    <div class="badges">
+      <span>Android 5.0+（守护功能建议 9.0+）</span>
+      <span>不需要 Root</span>
+      <span>完全离线，不联网</span>
+      <span>随时可回退</span>
+    </div>
+
+    <div class="tv">
+      <img src="shots/tv-final2.png" alt="星川桌面实拍：自然风光壁纸、时钟、推荐位与玻璃 Dock">
+    </div>
+    <p class="shot-cap">实机截图 · Droidlogic ak30a4 · Android 9 · 1920×1080 · 2026-11-03</p>
+
+    <div class="trust">
+      <span><b>真机验证</b> 开机自启 + 主页键守护</span>
+      <span><b>两个形态</b> 标准版 / 守护版</span>
+      <span><b>零权限滥用</b> 不读屏幕、不读通知、不联网</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <div class="wrap">
+    <span class="kicker">Features</span>
+    <h2>它做了什么，<span class="num">以及没做什么。</span></h2>
+    <p class="lead">星川只做一件事：当好一个桌面。它不推送内容、不请求账户、不停用任何系统应用。</p>
+
+    <div class="feat">
+      <div class="card">
+        <div class="no">01 — ICONS</div>
+        <h3>真实应用图标，不是文字。</h3>
+        <p>按 <b>Banner 图 → Activity 图标 → 应用图标</b> 三级解码，自适应图标自动处理，
+          宽幅 Banner 中心裁切、方形图标完整铺满。内存走 LruCache 按字节淘汰，低端电视也不卡。
+          实机 18 个应用图标全部正确显示。</p>
+      </div>
+      <div class="card">
+        <div class="no">02 — WALLPAPER</div>
+        <h3>自然风光，会呼吸。</h3>
+        <p>内置 6 张 4K 自然风光图，<b>24 秒交叉淡入 + 缓慢推近</b>，像一扇缓缓变换的窗。
+          按屏幕宽度降采样加载，1080p 电视不浪费一比特内存。也可以换成你自己的图片或视频。</p>
+      </div>
+      <div class="card">
+        <div class="no">03 — GUARD</div>
+        <h3>桌面守护：对付会抢桌面的固件。</h3>
+        <p>部分国产固件会用显式组件把原厂桌面拉回前台，绕过用户选定的 HOME。星川用无障碍服务
+          <b>只监听「前台切到了哪个包」</b>（canRetrieveWindowContent=false，读不到屏幕内容），
+          发现原厂桌面就把星川拉回来，实测 <b>1.5 秒内</b>完成。不停用、不卸载任何系统应用。</p>
+      </div>
+      <div class="card">
+        <div class="no">04 — DOCK</div>
+        <h3>玻璃 Dock + 推荐位 + 全部应用。</h3>
+        <p>底部 Dock 均分 <b>7 个常用应用 + 全部应用入口</b>；推荐位 5 个，按真实启动频次排序——
+          是你自己用出来的顺序，不是运营编辑挑的。应用抽屉网格排布，遥控器五向键全程可达。</p>
+      </div>
+      <div class="card">
+        <div class="no">05 — BOOT</div>
+        <h3>开机即达。</h3>
+        <p>注册开机自启，重启电视后<b>直接进入星川</b>，不需要按一次主页键「激活」。
+          已在 Android 9 实机验证：重启完成 → 前台即星川桌面。</p>
+      </div>
+      <div class="card">
+        <div class="no">06 — PRIVACY</div>
+        <h3>零联网、零账户。</h3>
+        <p>桌面<b>不发起任何网络请求</b>，不读取账户、不注册通知监听、不申请 WRITE_SECURE_SETTINGS。
+          壁纸全部内置在 APK 里。它是一块离线的画布，不是一双在线的眼睛。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SHOTS ============ -->
+<section id="shots">
+  <div class="wrap">
+    <span class="kicker">On Device</span>
+    <h2>实机截图。</h2>
+    <p class="lead">以下均来自真机 adb screencap 原图，未修饰。</p>
+    <div class="shots">
+      <div class="shot">
+        <img src="shots/tv-final2.png" alt="星川主界面">
+        <div class="cap"><b>主界面</b> — 时钟、日期、推荐位、玻璃 Dock</div>
+      </div>
+      <div class="shot">
+        <img src="shots/tv-drawer.png" alt="全部应用抽屉">
+        <div class="cap"><b>全部应用</b> — 真实图标网格，18 个应用可读可达</div>
+      </div>
+      <div class="shot">
+        <img src="shots/tv-settings2.png" alt="设置面板">
+        <div class="cap"><b>设置面板</b> — 壁纸、守护、隐藏应用恢复，11 格不溢出</div>
+      </div>
+      <div class="shot">
+        <img src="shots/tv-guard-on.png" alt="守护开启状态">
+        <div class="cap"><b>守护·开</b> — 原厂桌面回前台时自动拉回星川</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DOWNLOAD ============ -->
+<section id="download">
+  <div class="wrap">
+    <span class="kicker">Download</span>
+    <h2>两个 APK，功能完全相同。</h2>
+    <p class="lead">差别只有一个：清单里有没有 HOME 声明。先试标准版；固件拒绝再换守护版。</p>
+    <table style="margin-top:32px">
+      <tr><th>形态</th><th>文件</th><th>适用</th></tr>
+      <tr>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.0 · 声明 HOME</span></td>
+        <td><code>app-standard-release.apk</code></td>
+        <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
+      </tr>
+      <tr>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.0-guard · 不声明 HOME</span></td>
+        <td><code>app-guard-release.apk</code></td>
+        <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
+      </tr>
+    </table>
+    <div class="callout" style="margin-top:28px">
+      <b>获取文件：</b>APK 不打这个网站上——两个包共 52 MB，超过免费静态托管的单次发布上限。
+      让帮你安装的 AI 直接从项目目录取：<code>starriver/app/build/outputs/apk/standard/release/app-standard-release.apk</code>
+      和 <code>…/guard/release/app-guard-release.apk</code>。也可以自行编译：
+      <code>./gradlew assembleStandardRelease</code>（用 <code>assembleGuardRelease</code> 出守护版）。
+    </div>
+    <p class="hint" style="margin-top:16px">
+      装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
+    </p>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.0</span>
+eeb2d8b10454cb8fb3e688bd16d62793324b0d669fee8cc7e7779cfdf42d232d  app-standard-release.apk
+<span class="cm"># guard · v1.0.0-guard</span>
+2537948b221bc3d8491ec24dbfb743a3b282c38c9e80c9d88ce3fae91e109ea8  app-guard-release.apk</pre>
+    <p class="hint">
+      也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
+    </p>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="install">
+  <div class="wrap">
+    <span class="kicker">Install</span>
+    <h2>先准备两样东西。</h2>
+    <p class="lead">
+      一台电脑，和电视连在同一个 Wi-Fi；
+      一个装在这台电脑上、能替你动手的 AI（例如 WorkBuddy、Claude Code、Codex、豆包电脑版）。
+      只会聊天的手机网页做不到——它要在你的电脑上亲自跑命令。
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <h3><span class="no">第 1 步</span> · 打开电视的 ADB 调试，拿到 IP 地址</h3>
+        <p>设置 → 关于 → 连点「版本号」进开发者选项 → 打开「USB 调试 / 网络调试（ADB）」。
+          IP 地址在 设置 → 网络 里，四段数字，例如 <b>192.168.1.20</b>。</p>
+        <pre><button class="copy">复制</button><span class="cm"># 在电脑上执行，把 IP 换成你的</span>
+adb connect 192.168.1.20:5555
+adb devices</pre>
+        <p class="hint">电视弹出「允许 USB 调试吗？」→ 勾选<b>一律允许</b> → 允许。
+          显示 unauthorized 就是还没在电视上点允许。</p>
+      </div>
+
+      <div class="step">
+        <h3><span class="no">第 2 步</span> · 记录现场（安装前必做）</h3>
+        <p>这一步是<b>回滚的唯一依据</b>。执行者必须把结果原样贴给用户，恢复时按原值写回。</p>
+        <pre><button class="copy">复制</button>adb -s 192.168.1.20:5555 shell getprop ro.build.version.sdk
+adb -s 192.168.1.20:5555 shell getprop ro.product.model
+adb -s 192.168.1.20:5555 shell cmd package resolve-activity --brief \
+  -a android.intent.action.MAIN -c android.intent.category.HOME
+adb -s 192.168.1.20:5555 shell settings get secure screensaver_components
+adb -s 192.168.1.20:5555 shell settings get secure enabled_accessibility_services
+adb -s 192.168.1.20:5555 shell settings get secure enabled_notification_listeners</pre>
+      </div>
+
+      <div class="step">
+        <h3><span class="no">第 3 步</span> · 安装标准版</h3>
+        <pre><button class="copy">复制</button>adb -s 192.168.1.20:5555 install -r app-standard-release.apk
+<span class="cm"># 期望输出：Success</span></pre>
+        <p class="hint">报 <b>INSTALL_FAILED_VERIFICATION_FAILURE</b>（TCL 常见）→ 改用守护版，
+          推到电视上用文件管理器安装：
+          <code>adb -s 192.168.1.20:5555 push app-guard-release.apk /sdcard/Download/xingchuan-guard.apk</code>。
+          报<b>签名不匹配</b> → 先找回原来的签名密钥，不要自动卸载。</p>
+      </div>
+
+      <div class="step">
+        <h3><span class="no">第 4 步</span> · 设为默认桌面</h3>
+        <pre><button class="copy">复制</button>adb -s 192.168.1.20:5555 shell cmd role add-role-holder --user 0 android.app.role.HOME app.xingchuan.tv
+adb -s 192.168.1.20:5555 shell cmd package set-home-activity app.xingchuan.tv/.MainActivity
+adb -s 192.168.1.20:5555 shell input keyevent KEYCODE_HOME</pre>
+        <div class="callout">
+          <b>重要：set-home-activity 返回 Success ≠ 主页键真的会到星川。</b>
+          实测（Android 9，com.stv 平台）系统偏好确实写进去了，但厂商守护进程用<b>显式组件</b>拉起自己的桌面，
+          绕过 HOME 解析。此时 <code>resolve-activity</code> 仍报旧桌面属正常现象。
+          按一次主页键看结果：落到原厂桌面 → 进入第 5 步开守护。
+        </div>
+      </div>
+
+      <div class="step">
+        <h3><span class="no">第 5 步</span> · 按需开启桌面守护</h3>
+        <p>只有在第 4 步之后主页键仍被抢时才需要。状态的唯一来源是<b>系统无障碍开关</b>：</p>
+        <pre><button class="copy">复制</button><span class="cm"># 先读原值！非 null 时必须在其后追加，不要覆盖</span>
+adb -s 192.168.1.20:5555 shell settings get secure enabled_accessibility_services
+adb -s 192.168.1.20:5555 shell settings put secure enabled_accessibility_services \
+  app.xingchuan.tv/app.xingchuan.tv.core.GuardService
+adb -s 192.168.1.20:5555 shell settings put secure accessibility_enabled 1
+adb -s 192.168.1.20:5555 shell "dumpsys accessibility | grep label="   <span class="cm"># 出现 星川桌面守护 才算成功</span></pre>
+        <p class="hint">也可以在电视上操作：按菜单键 → 设置 → 守护 → 确定跳转无障碍设置 → 勾选「星川桌面守护」。
+          Android 13+ 需先在 应用 → 星川 → 允许受限设置。</p>
+        <div class="callout ok">
+          <b>守护能看到什么？</b>只有「前台切到了哪个包」。canRetrieveWindowContent=false，读不到任何屏幕内容。
+          开启后连按三次主页键验证：每次都应回到星川，且在 1.5 秒内完成。
+        </div>
+      </div>
+
+      <div class="step">
+        <h3><span class="no">第 6 步</span> · 验收（逐项做，逐项报）</h3>
+        <pre><button class="copy">复制</button>adb -s 192.168.1.20:5555 shell pm path app.xingchuan.tv
+adb -s 192.168.1.20:5555 shell input keyevent KEYCODE_HOME
+adb -s 192.168.1.20:5555 shell "dumpsys window | grep mCurrentFocus"
+adb -s 192.168.1.20:5555 shell screencap -p /sdcard/xingchuan-check.png
+adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
+        <p class="hint"><b>拉回截图自己看一眼</b>再下结论。四项分开报：安装 / 主页键 / 待机唤醒 / 开机。
+          没实际跑过的项，不许写「通过」。</p>
+      </div>
+    </div>
+    <div class="step">
+      <h3><span class="no">一条指令</span> · 让 AI 自己做完</h3>
+      <p>不想自己敲命令？复制下面这段，发给你电脑上的 AI。它会读执行手册，在你的电脑上亲自安装、验证、并把原始输出贴给你。</p>
+      <pre><button class="copy">复制</button>请阅读星川项目 starriver/AGENTS.md（执行手册），在这台电脑上把星川装到我的电视上。
+电视的四段数字：（把电视 IP 填在这里）
+
+要求：
+1. 先做第 2 节「记录现场」，把 7 条命令的原始输出原样贴给我，再动手安装。
+2. 只做手册里写的事：不停用任何系统应用，不卸载旧版，不清空数据，不重启电视（需要重启先问我）。
+3. 签名不匹配时先找原密钥，不要自动卸载。
+4. 安装、主页键、待机唤醒、开机四项分开报，没实际跑过的写「未测」，不要写通过。
+5. 装完按第 10 节贴出验收命令的原始输出。</pre>
+    </div>
+  </div>
+</section>
+<section id="glossary">
+  <div class="wrap">
+    <span class="kicker">Glossary</span>
+    <h2>这些词是什么意思。</h2>
+    <div class="gloss">
+      <div><dt>ADB 调试</dt><dd>让电脑通过家里的无线网络给电视安装应用的开关。菜单写成「ADB 调试」「USB 调试」「网络调试」都是它。</dd></div>
+      <div><dt>IP 地址</dt><dd>电视在家里网络中的编号，四段数字用点分开，像 192.168.1.20。在「设置 → 网络」里。</dd></div>
+      <div><dt>确认键</dt><dd>遥控器正中间的圆键，英文资料里叫 OK。</dd></div>
+      <div><dt>开发者选项</dt><dd>连点「版本号」后多出来的一组设置，调试开关在这里。</dd></div>
+      <div><dt>主页键</dt><dd>遥控器上画着房子的键。按下去应该回到主屏幕。</dd></div>
+      <div><dt>标准版</dt><dd>声明自己是桌面的 APK，能被系统设为默认 HOME。默认先试它。</dd></div>
+      <div><dt>守护版</dt><dd>不声明 HOME 的 APK，供拒绝第三方桌面的固件使用。装上后靠桌面守护常驻前台。</dd></div>
+      <div><dt>桌面守护</dt><dd>原厂桌面跳出来时自动切回星川的无障碍服务。只监听窗口切换，读不到屏幕内容。</dd></div>
+      <div><dt>显式组件劫持</dt><dd>厂商固件不问系统「谁是桌面」，直接按包名把自己的桌面拉到前台。这时系统偏好已写入星川，但主页键还是回原厂——开守护可解决。</dd></div>
+      <div><dt>自带桌面</dt><dd>电视出厂时的主屏幕。星川<b>不需要也不会</b>停用它；不要手动冻结原厂桌面，有的电视会黑屏。</dd></div>
+      <div><dt>覆盖安装</dt><dd>用 <code>install -r</code> 在旧版上装新版，设置和布局保留。前提是两版签名一致。</dd></div>
+      <div><dt>未实机验证</dt><dd>项目没有在真实电视上确认过这件事。本页所有「通过」均有对应命令输出。</dd></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESTORE ============ -->
+<section id="restore">
+  <div class="wrap">
+    <span class="kicker">Restore</span>
+    <h2>换回原来的桌面。可以换回去。</h2>
+    <p class="lead">复制下面的文字，发给帮你安装的那个 AI：</p>
+    <pre style="margin-top:24px"><button class="copy">复制</button>请阅读星川项目 AGENTS.md 里第 8 节「回滚」，在这台电脑上亲自做。
+电视上的四段数字：（把电视 IP 填在这里）
+把画着房子的键换回电视出厂时的主屏幕。先不要卸载星川。
+不要猜原来的主屏幕叫什么名字——用安装时第 2 步记录的组件。
+不要重启或关掉电视，除非我同意。
+做完后用白话告诉我：我按画着房子的键，看到的是不是原来的主屏幕。</pre>
+    <div class="callout" style="margin-top:24px">
+      <b>卡住了？</b>要用<b>安装时的那台电脑</b>——换了一台电脑，就没有第 2 步的现场记录，绝不能猜原桌面组件。
+      只在星川设置里关掉守护是不完整的回滚；关守护要两步：设置面板切回「守护·关」，<b>并且</b>在系统无障碍里取消勾选。
+      星川不改屏保、不注册通知监听、不禁用任何应用，所以回滚只需处理 HOME 与无障碍两项。
+    </div>
+  </div>
+</section>
+
+<!-- ============ RECORD ============ -->
+<section id="record">
+  <div class="wrap">
+    <span class="kicker">Field Record</span>
+    <h2>实机验收记录。</h2>
+    <p class="lead">机型 Droidlogic ak30a4 · Android 9（SDK 28）· 1920×1080 · 2026-11-03 · 192.168.0.2</p>
+    <table>
+      <tr><th>验收项</th><th>结果</th><th>依据</th></tr>
+      <tr><td><b>安装</b></td><td class="pass">通过</td><td><code>install -r</code> → Success；<code>pm path</code> 有返回；18 个应用图标全部正确显示</td></tr>
+      <tr><td><b>主页键</b></td><td class="pass">通过（依赖守护）</td><td>未开守护时落到 <code>com.stv.deskplatform</code>；开守护后连按 3 次均在 1.5 秒内回到星川，无来回抢焦点，logcat 无 ANR</td></tr>
+      <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
+      <tr><td><b>待机唤醒</b></td><td class="untested">未测</td><td>需要用户按遥控器电源键，尚未执行（不能用 adb 发电源键，会真的关机）</td></tr>
+      <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>11 格设置不溢出；抽屉 18 项五向键可达</td></tr>
+    </table>
+    <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq">
+  <div class="wrap">
+    <span class="kicker">FAQ</span>
+    <h2>安装之前，你大概会问。</h2>
+    <div class="faq">
+      <details>
+        <summary>需要 root 吗？会影响保修吗？</summary>
+        <div class="ans">不需要 root，不修改系统分区，不申请 WRITE_SECURE_SETTINGS。标准版只是通过 ADB 把自己设为默认桌面。
+          保修是否受影响取决于电视厂商的条款，本项目无法替你保证。真正的风险来自误用 ADB 命令——所以本页所有命令都明确写出用途和回滚方式。</div>
+      </details>
+      <details>
+        <summary>为什么按了主页键还是回原厂桌面？</summary>
+        <div class="ans">先看是不是「显式组件劫持」：系统偏好已经写入了星川（<code>set-home-activity</code> 返回 Success），
+          但厂商守护进程直接按包名拉起自己的桌面，绕过 HOME 解析。这在实测的 com.stv 平台上必然发生。
+          解法是开启<b>桌面守护</b>——原厂桌面一到前台就在约 1.5 秒内把星川拉回来。此时 <code>resolve-activity</code> 仍报旧桌面，属正常现象。</div>
+      </details>
+      <details>
+        <summary>桌面守护会不会读我的屏幕或通知？</summary>
+        <div class="ans">不会。守护是 无障碍服务，配置 <code>canRetrieveWindowContent=false</code>，只收到「前台切换到了哪个包」这一件事。
+          星川不注册通知监听、不读取账户、不发起任何网络请求。</div>
+      </details>
+      <details>
+        <summary>要停用原厂桌面吗？</summary>
+        <div class="ans"><b>绝对不要。</b>星川不靠冻结厂商应用抢桌面。停用原厂桌面可能导致系统无桌面可用（开机黑屏），
+          且这类操作不可逆程度高。原厂桌面留着不动，让守护去处理前台切换。</div>
+      </details>
+      <details>
+        <summary>怎么更新到新版本？</summary>
+        <div class="ans">拿到新的 <code>app-standard-release.apk</code>，<code>adb install -r</code> 覆盖安装即可，设置和布局会保留。
+          前提是签名一致——签名不匹配时先找回原签名密钥，不要直接卸载重装。</div>
+      </details>
+      <details>
+        <summary>壁纸能换成自己的吗？</summary>
+        <div class="ans">可以：设置里可选自定义图片或视频。但注意——选文件依赖系统文件选择器（SAF），
+          不少电视固件没有 DocumentsUI，此时只能用内置的 6 张自然风光图或渐变色。这是固件缺失，不是安装失败。</div>
+      </details>
+      <details>
+        <summary>和 xinghe-desktop、Tigris 是什么关系？</summary>
+        <div class="ans">星川是参考 <a href="https://github.com/youshoubianyouni/xinghe-desktop" target="_blank" rel="noopener">xinghe-desktop</a>
+          与 <a href="https://github.com/lesnolie/Tigris" target="_blank" rel="noopener">Tigris</a> 两个开源项目的思路、
+          为具体机型从头实现的独立项目：包名 app.xingchuan.tv，Kotlin + Jetpack Compose 编写，
+          图标解码、壁纸引擎、守护逻辑均为自有实现，与上述项目无代码继承关系，亦未获其认可。</div>
+      </details>
+      <details>
+        <summary>网站会收集数据吗？</summary>
+        <div class="ans">本页是纯静态文件，不使用 Cookie、不加载第三方统计或广告脚本，字体使用系统字体。
+          App 端完全离线，没有账号体系。</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>星川 Star River TV · v1.0.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>本站为纯静态页面，所有实拍图来自真机 adb screencap 原图。所有「通过」结论均有对应命令原始输出；未实测的项目如实标注「未测」。</p>
+    <p>独立个人项目，与任何电视厂商无关。「Android」是 Google LLC 的商标。安装流程不会停用、卸载任何系统应用，也不会远程重启你的电视——除非你明确同意。</p>
+  </div>
+</footer>
+
+<script>
+  // 星河：随机星星
+  (function(){
+    var box = document.getElementById('stars');
+    if(!box) return;
+    for(var i=0;i<90;i++){
+      var s = document.createElement('i');
+      s.style.left = Math.random()*100+'%';
+      s.style.top  = Math.random()*100+'%';
+      s.style.animationDelay = (Math.random()*4).toFixed(2)+'s';
+      s.style.animationDuration = (3+Math.random()*4).toFixed(2)+'s';
+      box.appendChild(s);
+    }
+  })();
+  // 复制按钮
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var pre = btn.parentElement;
+      var code = pre.cloneNode(true);
+      code.querySelectorAll('.copy,.cm').forEach(function(n){n.remove()});
+      var text = code.textContent.replace(/^\n+/,'').replace(/\s+$/,'');
+      navigator.clipboard.writeText(text).then(function(){
+        var old = btn.textContent;
+        btn.textContent = '已复制 ✓';
+        setTimeout(function(){ btn.textContent = old; }, 1600);
+      });
+    });
+  });
+</script>
+</body>
+</html>

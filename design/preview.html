@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>星川 Star River TV · 界面预览</title>
+<style>
+  :root{
+    --text:#F3F6FF; --dim:#9FAAC6; --faint:rgba(200,210,234,.4);
+    --accent:#7FE7E0; --accent2:#4C7DF0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#eceef2; color:#1b2130;
+    font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    padding:40px 24px 64px; display:flex; flex-direction:column; align-items:center; gap:28px;
+  }
+  header{text-align:center;max-width:900px}
+  h1{font-size:22px;font-weight:600;letter-spacing:.5px}
+  header p{margin-top:8px;font-size:13px;color:#5d6679;line-height:1.7}
+  .grid{display:flex;flex-direction:column;gap:36px;align-items:center}
+  figure{display:flex;flex-direction:column;gap:10px}
+  figcaption{font-size:12.5px;color:#5d6679;letter-spacing:.4px;padding-left:2px}
+  .frame{
+    width:900px;height:506px;position:relative;overflow:hidden;
+    border-radius:12px;box-shadow:0 18px 48px rgba(16,24,48,.28),0 2px 6px rgba(16,24,48,.16);
+    background:#05070D;
+  }
+  .screen{
+    position:absolute;top:0;left:0;width:1920px;height:1080px;
+    transform:scale(.46875);transform-origin:top left;
+    overflow:hidden;color:var(--text);
+  }
+
+  /* ---------- 壁纸 ---------- */
+  /* 真实实现：assets/wallpapers 里的 3840×2160 风光照，降采样后 blur(6dp) + 压暗 */
+  .wall{position:absolute;inset:-40px;background-image:url(../app/src/main/assets/wallpapers/nature-05.jpg);
+    background-size:cover;background-position:center;filter:blur(5px) brightness(.74) saturate(.98)}
+  .glow{position:absolute;left:50%;top:-140px;width:1700px;height:1700px;transform:translateX(-50%);
+    background:radial-gradient(circle closest-side,rgba(76,125,240,.34),rgba(76,125,240,0) 70%)}
+  .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,20,.40),rgba(4,10,20,.20) 42%,rgba(4,10,20,.60))}
+
+  /* ---------- 主屏 ---------- */
+  .pad{position:absolute;inset:0;padding:72px 112px;display:flex;flex-direction:column}
+  .top{display:flex;align-items:flex-start;justify-content:space-between}
+  .clock{font-size:128px;font-weight:300;letter-spacing:4px;line-height:1;color:#F3F6FF}
+  .date{margin-top:12px;font-size:34px;color:var(--dim);letter-spacing:1px}
+  .brand{text-align:right}
+  .brand .zh{font-size:44px;font-weight:600;letter-spacing:2px}
+  .brand .en{margin-top:8px;font-size:22px;letter-spacing:4px;color:var(--dim);font-weight:500}
+
+  .spacer{flex:1}
+  .hint{border-radius:60px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    padding:14px 28px;font-size:24px;color:var(--dim);display:inline-block}
+
+  /* 推荐位 */
+  .shelf{display:flex;gap:32px}
+  .card{
+    width:312px;height:264px;border-radius:40px;padding:30px;
+    background:linear-gradient(180deg,rgba(255,255,255,.086),rgba(255,255,255,.039));
+    border:2px solid rgba(255,255,255,.18);
+    display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 18px 40px rgba(0,0,0,.22);
+  }
+  .card.on{
+    background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,.12));
+    border-color:rgba(255,255,255,.70);
+    transform:scale(1.05);box-shadow:0 26px 56px rgba(0,0,0,.34),0 0 0 6px rgba(127,231,224,.10);
+  }
+  .ic{border-radius:24px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:38px;letter-spacing:0;
+    box-shadow:0 8px 18px rgba(0,0,0,.28)}
+  .shelf .ic{width:88px;height:88px}
+  .card .name{font-size:30px;font-weight:500;letter-spacing:.5px}
+  .card .sub{margin-top:6px;font-size:22px;color:var(--faint);letter-spacing:1px}
+  .gap22{height:68px}
+
+  /* Dock */
+  .dock{
+    align-self:flex-start;height:208px;border-radius:60px;padding:20px 28px;
+    display:flex;align-items:center;gap:12px;
+    background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.08));
+    border:2px solid rgba(255,255,255,.22);
+    box-shadow:0 24px 64px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .tile{width:172px;border-radius:36px;padding:16px 0;display:flex;flex-direction:column;
+    align-items:center;gap:12px}
+  .tile.on{background:rgba(255,255,255,.14);border:3px solid rgba(255,255,255,.70);transform:scale(1.08)}
+  .tile .ic{width:104px;height:104px;border-radius:26px}
+  .tile .lb{font-size:24px;color:var(--dim)}
+  .tile.on .lb{color:var(--text)}
+  .dots{width:104px;height:104px;display:grid;grid-template-columns:repeat(3,1fr);
+    place-items:center;gap:0}
+  .dots i{width:18px;height:18px;border-radius:50%;background:var(--dim);display:block}
+  .tile.on .dots i{background:var(--accent)}
+
+  /* 提示条 */
+  .hints{position:absolute;right:112px;bottom:236px;display:flex;gap:20px}
+  .chip{border-radius:60px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    padding:14px 28px;font-size:24px;color:var(--dim)}
+
+  /* ---------- 抽屉 ---------- */
+  .drawer{position:absolute;inset:0;background:rgba(5,10,20,.95);padding:68px 112px;display:flex;flex-direction:column}
+  .dhead{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+  .dhead .t{font-size:52px;font-weight:600}
+  .dhead .c{font-size:28px;color:var(--dim)}
+  .dhead .h{margin-left:auto;font-size:22px;color:var(--faint)}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .cell{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:32px;
+    background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.10)}
+  .cell.on{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.70);transform:scale(1.03);
+    box-shadow:0 16px 36px rgba(0,0,0,.32)}
+  .cell .ic{width:92px;height:92px;border-radius:22px;font-size:34px}
+  .cell .lb{font-size:28px;color:#CBD5E8}
+  .cell.on .lb{color:#fff}
+
+  /* ---------- 设置 ---------- */
+  .sheet{position:absolute;left:0;right:0;bottom:0;padding:60px 96px 52px;
+    border-radius:68px 68px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.09));
+    border-top:2px solid rgba(255,255,255,.24);
+    box-shadow:0 -30px 80px rgba(0,0,0,.42)}
+  .shead{display:flex;align-items:center;gap:24px}
+  .shead .t{font-size:52px;font-weight:600}
+  .shead .c{font-size:26px;color:var(--dim)}
+  .shead .h{margin-left:auto;font-size:22px;color:var(--faint)}
+  .row{display:flex;gap:16px;margin-top:40px}
+  .stile{width:140px;border-radius:36px;padding:24px 0;display:flex;flex-direction:column;
+    align-items:center;gap:16px;background:rgba(255,255,255,.05);
+    border:2px solid rgba(255,255,255,.16)}
+  .stile.on{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.72);transform:scale(1.06)}
+  .swatch{width:112px;height:80px;border-radius:20px}
+  .stile .lb{font-size:22px;color:var(--dim)}
+  .stile.on .lb{color:#fff}
+  .badge{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12);
+    border:2px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
+    font-size:36px;color:var(--dim)}
+  .stile.on .badge{color:var(--accent)}
+  .note{margin-top:34px;font-size:22px;color:var(--faint)}
+
+  .ic svg,.badge svg{width:60%;height:60%;fill:none;stroke:#fff;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;display:block;overflow:visible}
+  .badge svg{width:46%;height:46%}
+  .stile.on .badge svg{stroke:var(--accent)}
+
+  /* 图标基色 */
+  .a1{background:linear-gradient(145deg,#FF7A45,#E2350F)}
+  .a2{background:linear-gradient(145deg,#4CD964,#12A150)}
+  .a3{background:linear-gradient(145deg,#5AC8FA,#0A84FF)}
+  .a4{background:linear-gradient(145deg,#FFD60A,#FF9F0A)}
+  .a5{background:linear-gradient(145deg,#BF5AF2,#7B2CBF)}
+  .a6{background:linear-gradient(145deg,#FF6482,#C9184A)}
+  .a7{background:linear-gradient(145deg,#8E8E93,#48484A)}
+  .a8{background:linear-gradient(145deg,#32ADE6,#0071A4)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="g-play"><path d="M9 5.6v12.8L20 12z" fill="#fff" stroke="none"/></g>
+    <g id="g-playcircle"><circle cx="12" cy="12" r="8.4"/><path d="M10.4 8.6v6.8L16 12z" fill="#fff" stroke="none"/></g>
+    <g id="g-tv"><rect x="4" y="9" width="16" height="10.5" rx="2.4"/><path d="M8.8 5.2 12 8.6l3.2-3.4"/></g>
+    <g id="g-cloud"><path d="M7.2 17.5h9.1a3.4 3.4 0 0 0 .3-6.8 5 5 0 0 0-9.4.4 3.5 3.5 0 0 0 0 6.4z"/></g>
+    <g id="g-box"><path d="M12 3.2 20 7.6v8.8L12 20.8 4 16.4V7.6z"/><path d="M4.3 7.8 12 12l7.7-4.2M12 12v8.6"/></g>
+    <g id="g-folder"><path d="M3.4 7.4a2 2 0 0 1 2-2h3.4l2 2.6h7.8a2 2 0 0 1 2 2v7.2a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z"/></g>
+    <g id="g-broadcast"><circle cx="12" cy="12" r="2.2" fill="#fff" stroke="none"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4"/><path d="M5 5a9.6 9.6 0 0 0 0 14"/></g>
+    <g id="g-cast"><rect x="3.4" y="4.6" width="13" height="9" rx="1.6"/><path d="M3.4 17.2h.01M3.4 13.4h4.2a3.8 3.8 0 0 1 3.8 3.8M20.6 8.2v8.6a2 2 0 0 1-2 2h-4.2"/></g>
+    <g id="g-kodi"><rect x="4" y="4" width="16" height="16" rx="4.6"/><path d="M10.2 8.6 16.4 12l-6.2 3.4z" fill="#fff" stroke="none"/></g>
+    <g id="g-gear"><circle cx="12" cy="12" r="3.1"/><path d="M12 3v2.3M12 18.7V21M4.3 7.6l2 1.1M17.7 15.3l2 1.1M4.3 16.4l2-1.1M17.7 8.7l2-1.1"/></g>
+    <g id="g-signal"><path d="M5 17.4v-3.2M9.7 17.4v-6.6M14.3 17.4V8.2M19 17.4V4.6"/></g>
+    <g id="g-music"><path d="M9.4 16.6V6.4l9-2v10.2"/><ellipse cx="7.2" cy="17.2" rx="2.3" ry="2"/><ellipse cx="16.2" cy="15.2" rx="2.3" ry="2"/></g>
+    <g id="g-photo"><rect x="3.6" y="5" width="16.8" height="14" rx="3"/><circle cx="8.8" cy="9.8" r="1.5"/><path d="M4.6 17.4 9.6 12.6l3 2.8 3-2.4 3.4 3.6"/></g>
+    <g id="g-game"><rect x="3.2" y="7.8" width="17.6" height="8.6" rx="4.3"/><path d="M7.8 10.6v3.2M6.2 12.2h3.2"/><circle cx="16.4" cy="11.4" r="1" fill="#fff" stroke="none"/><circle cx="18" cy="13.6" r="1" fill="#fff" stroke="none"/></g>
+    <g id="g-kid"><circle cx="12" cy="7.6" r="3"/><path d="M5.8 20c0-3.4 2.8-6.2 6.2-6.2s6.2 2.8 6.2 6.2"/></g>
+    <g id="g-globe"><circle cx="12" cy="12" r="8.2"/><path d="M3.9 12h16.2M12 3.8c2.6 2.5 2.6 13.9 0 16.4M12 3.8c-2.6 2.5-2.6 13.9 0 16.4"/></g>
+    <g id="g-clock"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 2"/></g>
+    <g id="g-sun"><circle cx="12" cy="12" r="4"/><path d="M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.9 5.9 7.3 7.3M16.7 16.7l1.4 1.4M18.1 5.9l-1.4 1.4M7.3 16.7 5.9 18.1"/></g>
+    <g id="g-bell"><path d="M7 10.4a5 5 0 0 1 10 0v3.8l1.7 2.4H5.3L7 14.2z"/><path d="M10.4 19a1.9 1.9 0 0 0 3.2 0"/></g>
+    <g id="g-store"><path d="M4.2 9.2h15.6l-1 8.4a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8z"/><path d="M8.4 9.2V7a3.6 3.6 0 0 1 7.2 0v2.2"/></g>
+    <g id="g-picture"><rect x="3.8" y="5.6" width="16.4" height="12.8" rx="3"/><circle cx="9" cy="10" r="1.4"/><path d="M4.8 16.8 10 11.8l2.8 2.6 2.8-2.2 3.2 3.4"/></g>
+    <g id="g-film"><rect x="3.6" y="6" width="16.8" height="12" rx="2.6"/><path d="M8 6v12M16 6v12M3.6 12h16.8"/></g>
+    <g id="g-eyeoff"><path d="M4.2 12s2.9-4.6 7.8-4.6 7.8 4.6 7.8 4.6-2.9 4.6-7.8 4.6S4.2 12 4.2 12z" opacity=".45"/><path d="M5 19 19 5"/></g>
+    <g id="g-undo"><path d="M5 9.6h8.4a4.6 4.6 0 0 1 0 9.2H9"/><path d="M8.6 5.6 4.8 9.6l3.8 4"/></g>
+    <g id="g-mountain"><path d="M3 18.4l5.6-8.2 3.4 4.4 2.6-3.4 6.4 7.2z"/><circle cx="16.6" cy="6.6" r="1.7"/></g>
+    <g id="g-shield"><path d="M12 3.4 5.4 6v5.6c0 4.1 2.7 7.6 6.6 9 3.9-1.4 6.6-4.9 6.6-9V6z"/><path d="M9.3 12.1 11.3 14l3.6-3.8"/></g>
+  </defs>
+</svg>
+
+<header>
+  <h1>星川 · Star River TV — 界面预览</h1>
+  <p>按 1920×1080 电视实际像素还原：留白 56dp、推荐位 5×156dp、Dock 高 104dp、玻璃面板为半透明白叠加。<br>
+  真实渲染由 Compose 完成，此页用于在设计阶段确认版式与气质。<br>
+  已装到真机后的实际画面见 <b>design/shots/</b>（tv-final2 / tv-settings2 / tv-drawer）。<br>
+  电视上的图标来自各应用自己声明的图标（PackageManager 读取）；本页是静态网页，取不到电视里已装应用的图标，故用同类图形占位。<br>
+  背景用的是内置风光轮播里的真实一张（nature-05），并按实现的参数做了 blur(6dp) + 压暗。</p>
+</header>
+
+<div class="grid">
+
+  <!-- 主屏 -->
+  <figure>
+    <div class="frame"><div class="screen">
+      <div class="wall"></div><div class="glow"></div><div class="scrim"></div>
+      <div class="pad">
+        <div class="top">
+          <div>
+            <div class="clock">21:48</div>
+            <div class="date">11月3日  周二</div>
+          </div>
+          <div class="brand">
+            <div class="zh">星川</div>
+            <div class="en">STAR RIVER TV</div>
+            <div class="hint" style="margin-top:28px">菜单键 设置</div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+
+        <div class="shelf">
+          <div class="card on">
+            <div class="ic a1"><svg viewBox="0 0 24 24"><use href="#g-play"/></svg></div>
+            <div><div class="name">芒果TV</div><div class="sub">常用</div></div>
+          </div>
+          <div class="card">
+            <div class="ic a2"><svg viewBox="0 0 24 24"><use href="#g-playcircle"/></svg></div>
+            <div><div class="name">爱奇艺</div><div class="sub">常用</div></div>
+          </div>
+          <div class="card">
+            <div class="ic a3"><svg viewBox="0 0 24 24"><use href="#g-tv"/></svg></div>
+            <div><div class="name">哔哩哔哩</div><div class="sub">常用</div></div>
+          </div>
+          <div class="card">
+            <div class="ic a5"><svg viewBox="0 0 24 24"><use href="#g-cloud"/></svg></div>
+            <div><div class="name">云视听极光</div><div class="sub">常用</div></div>
+          </div>
+          <div class="card">
+            <div class="ic a4"><svg viewBox="0 0 24 24"><use href="#g-box"/></svg></div>
+            <div><div class="name">当贝市场</div><div class="sub">常用</div></div>
+          </div>
+        </div>
+
+        <div class="gap22"></div>
+
+        <div class="dock">
+          <div class="tile on"><div class="ic a1"><svg viewBox="0 0 24 24"><use href="#g-play"/></svg></div><div class="lb">芒果TV</div></div>
+          <div class="tile"><div class="ic a2"><svg viewBox="0 0 24 24"><use href="#g-playcircle"/></svg></div><div class="lb">爱奇艺</div></div>
+          <div class="tile"><div class="ic a3"><svg viewBox="0 0 24 24"><use href="#g-tv"/></svg></div><div class="lb">哔哩哔哩</div></div>
+          <div class="tile"><div class="ic a5"><svg viewBox="0 0 24 24"><use href="#g-cloud"/></svg></div><div class="lb">云视听</div></div>
+          <div class="tile"><div class="ic a4"><svg viewBox="0 0 24 24"><use href="#g-box"/></svg></div><div class="lb">当贝市场</div></div>
+          <div class="tile"><div class="ic a8"><svg viewBox="0 0 24 24"><use href="#g-folder"/></svg></div><div class="lb">文件管理</div></div>
+          <div class="tile">
+            <div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="lb">全部</div>
+          </div>
+        </div>
+      </div>
+
+    </div></div>
+    <figcaption>主屏 · 焦点在 Dock 第一个应用（放大 + 亮描边）</figcaption>
+  </figure>
+
+  <!-- 抽屉 -->
+  <figure>
+    <div class="frame"><div class="screen">
+      <div class="wall"></div><div class="glow"></div><div class="scrim"></div>
+      <div class="drawer">
+        <div class="dhead">
+          <div class="t">全部应用</div>
+          <div class="c">28 个</div>
+          <div class="h">菜单键 加入/移出 Dock　·　返回键 关闭</div>
+        </div>
+        <div class="grid5">
+          <div class="cell on"><div class="ic a1"><svg viewBox="0 0 24 24"><use href="#g-play"/></svg></div><div class="lb">芒果TV</div></div>
+          <div class="cell"><div class="ic a2"><svg viewBox="0 0 24 24"><use href="#g-playcircle"/></svg></div><div class="lb">爱奇艺</div></div>
+          <div class="cell"><div class="ic a3"><svg viewBox="0 0 24 24"><use href="#g-tv"/></svg></div><div class="lb">哔哩哔哩</div></div>
+          <div class="cell"><div class="ic a5"><svg viewBox="0 0 24 24"><use href="#g-cloud"/></svg></div><div class="lb">云视听极光</div></div>
+          <div class="cell"><div class="ic a4"><svg viewBox="0 0 24 24"><use href="#g-box"/></svg></div><div class="lb">当贝市场</div></div>
+
+          <div class="cell"><div class="ic a6"><svg viewBox="0 0 24 24"><use href="#g-broadcast"/></svg></div><div class="lb">央视频</div></div>
+          <div class="cell"><div class="ic a7"><svg viewBox="0 0 24 24"><use href="#g-cast"/></svg></div><div class="lb">乐播投屏</div></div>
+          <div class="cell"><div class="ic a8"><svg viewBox="0 0 24 24"><use href="#g-folder"/></svg></div><div class="lb">文件管理</div></div>
+          <div class="cell"><div class="ic a3"><svg viewBox="0 0 24 24"><use href="#g-kodi"/></svg></div><div class="lb">Kodi</div></div>
+          <div class="cell"><div class="ic a7"><svg viewBox="0 0 24 24"><use href="#g-gear"/></svg></div><div class="lb">设置</div></div>
+
+          <div class="cell"><div class="ic a2"><svg viewBox="0 0 24 24"><use href="#g-signal"/></svg></div><div class="lb">网络测速</div></div>
+          <div class="cell"><div class="ic a4"><svg viewBox="0 0 24 24"><use href="#g-music"/></svg></div><div class="lb">音乐</div></div>
+          <div class="cell"><div class="ic a5"><svg viewBox="0 0 24 24"><use href="#g-photo"/></svg></div><div class="lb">相册</div></div>
+          <div class="cell"><div class="ic a6"><svg viewBox="0 0 24 24"><use href="#g-game"/></svg></div><div class="lb">游戏中心</div></div>
+          <div class="cell"><div class="ic a1"><svg viewBox="0 0 24 24"><use href="#g-kid"/></svg></div><div class="lb">少儿</div></div>
+
+          <div class="cell"><div class="ic a8"><svg viewBox="0 0 24 24"><use href="#g-globe"/></svg></div><div class="lb">浏览器</div></div>
+          <div class="cell"><div class="ic a7"><svg viewBox="0 0 24 24"><use href="#g-clock"/></svg></div><div class="lb">时钟</div></div>
+          <div class="cell"><div class="ic a3"><svg viewBox="0 0 24 24"><use href="#g-sun"/></svg></div><div class="lb">天气</div></div>
+          <div class="cell"><div class="ic a2"><svg viewBox="0 0 24 24"><use href="#g-bell"/></svg></div><div class="lb">通知</div></div>
+          <div class="cell"><div class="ic a4"><svg viewBox="0 0 24 24"><use href="#g-store"/></svg></div><div class="lb">应用商店</div></div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption>应用抽屉 · 5 列网格，中文拼音排序，菜单键切换 Dock</figcaption>
+  </figure>
+
+  <!-- 设置 -->
+  <figure>
+    <div class="frame"><div class="screen">
+      <div class="wall"></div><div class="glow"></div><div class="scrim"></div>
+      <div class="pad">
+        <div class="top">
+          <div><div class="clock" style="opacity:.35">21:48</div><div class="date" style="opacity:.35">11月3日  周二</div></div>
+          <div class="brand" style="opacity:.35"><div class="zh">星川</div><div class="en">STAR RIVER TV</div></div>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="shead">
+          <div class="t">设置</div>
+          <div class="c">壁纸 / 应用</div>
+          <div class="h">返回键 关闭</div>
+        </div>
+        <div class="row">
+          <div class="stile"><div class="swatch" style="background:linear-gradient(180deg,#05070D,#0C1830,#1B3663)"></div><div class="lb">极夜</div></div>
+          <div class="stile"><div class="swatch" style="background:linear-gradient(180deg,#03101A,#0A3340,#12707E)"></div><div class="lb">星川</div></div>
+          <div class="stile"><div class="swatch" style="background:linear-gradient(180deg,#160509,#3A1119,#70202C)"></div><div class="lb">赤霞</div></div>
+          <div class="stile"><div class="swatch" style="background:linear-gradient(180deg,#050F0B,#102C1D,#2A5340)"></div><div class="lb">林雾</div></div>
+          <div class="stile"><div class="swatch" style="background:linear-gradient(180deg,#08090C,#16181F,#2A2E38)"></div><div class="lb">玄石灰</div></div>
+          <div class="stile on"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-mountain"/></svg></div><div class="lb">风光轮播</div></div>
+          <div class="stile"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-picture"/></svg></div><div class="lb">选择图片</div></div>
+          <div class="stile"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-film"/></svg></div><div class="lb">选择视频</div></div>
+          <div class="stile"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-shield"/></svg></div><div class="lb">守护·关</div></div>
+          <div class="stile"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-eyeoff"/></svg></div><div class="lb">恢复隐藏</div></div>
+          <div class="stile"><div class="badge"><svg viewBox="0 0 24 24"><use href="#g-undo"/></svg></div><div class="lb">恢复默认</div></div>
+        </div>
+        <div class="note">壁纸即时生效。「风光轮播」为内置超清风景，约 24 秒换一张；「守护·开」需在系统无障碍里勾选星川桌面守护。</div>
+      </div>
+    </div></div>
+    <figcaption>设置 · 底部玻璃抽屉，横向线性导航</figcaption>
+  </figure>
+
+</div>
+</body>
+</html>

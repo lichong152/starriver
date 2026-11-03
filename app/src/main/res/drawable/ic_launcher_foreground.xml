@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 夜色底 -->
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- 星河：一条斜向流动的光带 -->
+    <path
+        android:pathData="M12,74 C34,58 62,80 96,50 C96,50 96,58 96,58 C64,88 34,68 12,82 Z"
+        android:fillColor="#4C7DF0"
+        android:fillAlpha="0.55" />
+    <path
+        android:pathData="M16,66 C38,52 66,72 96,42 C96,42 96,47 96,47 C66,77 38,57 16,71 Z"
+        android:fillColor="#7FE7E0"
+        android:fillAlpha="0.85" />
+    <!-- 星 -->
+    <path
+        android:pathData="M54,26 L58.6,42.4 L74,47 L58.6,51.6 L54,68 L49.4,51.6 L34,47 L49.4,42.4 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

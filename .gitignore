@@ -1,0 +1,28 @@
+# Gradle / Android
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+local/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# 产物
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# EdgeOne 部署缓存
+.edgeone/
+
+# 设计中间产物（仅本机保留，不入库）
+design/shots/crop-*.png
+design/shots/z-*.png
+design/shots/tv-home2.png
+design/shots/tv-final.png
+design/shots/tv-settings.png
