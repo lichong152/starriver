@@ -2,6 +2,7 @@ package app.xingchuan.tv.ui
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,11 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -41,6 +44,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,6 +81,9 @@ fun HomeScreen(model: LauncherModel) {
     var dockIndex by remember { mutableStateOf(0) }
     var gridIndex by remember { mutableStateOf(0) }
     var settingIndex by remember { mutableStateOf(0) }
+
+    // 「菜单键 设置」提示：进桌面 6 秒后淡出，任何按键都让它重新亮起，避免常驻打扰
+    var hintTick by remember { mutableIntStateOf(0) }
 
     // 守护要「已开启」且「系统里确实勾选了无障碍服务」才算真正生效，两者缺一都不能显示为开
     var guardOn by remember { mutableStateOf(false) }
@@ -159,6 +166,8 @@ fun HomeScreen(model: LauncherModel) {
 
         fun handleKey(e: KeyEvent): Boolean {
             if (e.type != KeyEventType.KeyDown) return false
+            // 一有操作就把设置提示重新点亮，6 秒后再次淡出
+            hintTick++
 
             // 设置面板：两行网格导航（左右同行走动，上下跨行）
             if (model.settingsOpen) {
@@ -279,7 +288,7 @@ fun HomeScreen(model: LauncherModel) {
                 .fillMaxSize()
                 .padding(horizontal = (56 * s).dp, vertical = (36 * s).dp),
         ) {
-            TopBar(now = now, s = s)
+            TopBar(now = now, s = s, hintTick = hintTick)
             Spacer(Modifier.weight(1f))
             if (shelfApps.isNotEmpty()) {
                 ShelfRow(
@@ -287,7 +296,7 @@ fun HomeScreen(model: LauncherModel) {
                     focusedIndex = if (zone == Zone.Shelf) shelfIndex else -1,
                     s = s,
                 )
-                Spacer(Modifier.height((34 * s).dp))
+                Spacer(Modifier.height((42 * s).dp))
             }
             DockRow(
                 apps = dockApps,
@@ -333,12 +342,25 @@ fun HomeScreen(model: LauncherModel) {
 }
 
 @Composable
-private fun TopBar(now: Calendar, s: Float) {
+private fun TopBar(now: Calendar, s: Float, hintTick: Int) {
     val time = remember(now) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now.time) }
     val date = remember(now) {
         val w = WEEKDAYS[now.get(Calendar.DAY_OF_WEEK) - 1]
         "${now.get(Calendar.MONTH) + 1}月${now.get(Calendar.DAY_OF_MONTH)}日  $w"
     }
+
+    // 提示只在刚进桌面 / 刚按键时可见，静置 6 秒后淡到几乎透明
+    var hintOn by remember { mutableStateOf(true) }
+    LaunchedEffect(hintTick) {
+        hintOn = true
+        delay(6_000)
+        hintOn = false
+    }
+    val hintAlpha by animateFloatAsState(
+        targetValue = if (hintOn) 1f else 0.18f,
+        animationSpec = tween(600),
+        label = "hint",
+    )
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Column {
@@ -347,7 +369,7 @@ private fun TopBar(now: Calendar, s: Float) {
                 style = Type.Clock.copy(fontSize = (64 * s).sp, letterSpacing = 2.sp),
             )
             Spacer(Modifier.height((6 * s).dp))
-            Txt(text = date, style = Type.Date.copy(fontSize = (17 * s).sp))
+            Txt(text = date, style = Type.Date.copy(fontSize = (19 * s).sp))
         }
         Spacer(Modifier.weight(1f))
         Column(horizontalAlignment = Alignment.End) {
@@ -355,7 +377,7 @@ private fun TopBar(now: Calendar, s: Float) {
             Spacer(Modifier.height((4 * s).dp))
             Txt(text = "STAR RIVER TV", style = Type.Badge.copy(fontSize = (11 * s).sp))
             Spacer(Modifier.height((14 * s).dp))
-            HintChip("菜单键 设置", s)
+            Box(Modifier.alpha(hintAlpha)) { HintChip("菜单键 设置", s) }
         }
     }
 }
@@ -391,9 +413,9 @@ private fun ShelfRow(apps: List<AppItem>, focusedIndex: Int, s: Float) {
             GlassPanel(
                 modifier = Modifier
                     .width((156 * s).dp)
-                    .height((122 * s).dp)
+                    .height((110 * s).dp)
                     .focusScale(focused, to = 1.05f),
-                shape = RoundedCornerShape((20 * s).dp),
+                shape = RoundedCornerShape((24 * s).dp),
                 focused = focused,
             ) {
                 Column(
@@ -408,19 +430,14 @@ private fun ShelfRow(apps: List<AppItem>, focusedIndex: Int, s: Float) {
                         size = (44 * s).dp,
                         corner = (12 * s).dp,
                     )
-                    Column {
-                        Txt(
-                            text = app.label,
-                            style = Type.AppLabel.copy(fontSize = (15 * s).sp),
-                            color = Ink.Text,
-                        )
-                        Spacer(Modifier.height((3 * s).dp))
-                        Txt(
-                            text = "常用",
-                            style = Type.Badge.copy(fontSize = (11 * s).sp),
-                            color = Ink.TextDim,
-                        )
-                    }
+                    Txt(
+                        text = app.label,
+                        style = Type.AppLabel.copy(
+                            fontSize = (16 * s).sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = Ink.Text,
+                    )
                 }
             }
         }

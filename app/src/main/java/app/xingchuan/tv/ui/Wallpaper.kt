@@ -10,8 +10,6 @@ import android.util.LruCache
 import android.view.Surface
 import android.view.TextureView
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,7 +29,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -61,7 +58,7 @@ fun WallpaperLayer(spec: WallpaperSpec, modifier: Modifier = Modifier) {
             is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri))
             is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri))
         }
-        // 统一压暗 + 上暗下更暗，保证任何壁纸上文字都可读
+        // 统一压暗 + 上下更暗，保证任何壁纸上文字都可读；中间层保持轻薄，风光才通透
         Box(
             Modifier
                 .fillMaxSize()
@@ -69,7 +66,7 @@ fun WallpaperLayer(spec: WallpaperSpec, modifier: Modifier = Modifier) {
                     Brush.verticalGradient(
                         listOf(
                             Color(0x70040A14),
-                            Color(0x4D040A14),
+                            Color(0x38040A14),
                             Color(0x9E040A14),
                         )
                     )
@@ -142,8 +139,8 @@ private fun decodeScaled(ctx: Context, uri: Uri, targetW: Int): Bitmap? = try {
  * 内置分组轮播。
  *
  * 图片放在 `assets/wallpapers/`，以 `<分组id>-` 开头；同一组内按文件名排序播放，
- * 所以增删图片不用改代码。每组 10 张，每张停留 30 秒，切换时 1.5 秒交叉淡入，
- * 同时做极慢的推近 / 平移（Ken Burns），静止的风景在电视上才不会显得"卡住了"。
+ * 所以增删图片不用改代码。每组 10 张，每张停留 30 秒，切换时 1.5 秒交叉淡入；
+ * 壁纸保持静止，不做推近 / 平移等缓动。
  *
  * 内存上做了两件事：解码时就地降采样（按屏幕宽度取 1920 或 2560），
  * 配置用 RGB_565 省一半；LruCache 只留 3 张（上一张 / 当前 / 下一张），
@@ -231,26 +228,11 @@ private fun GroupWallpaper(prefix: String) {
         if (bmp == null) {
             Box(Modifier.fillMaxSize().background(Ink.Bg))
         } else {
-            val progress = remember(i) { Animatable(0f) }
-            LaunchedEffect(i) {
-                progress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(GROUP_INTERVAL_MS.toInt(), easing = LinearEasing),
-                )
-            }
-            val drift = if (i % 2 == 0) 1f else -1f
             Image(
                 bitmap = bmp,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer {
-                        val scale = 1.03f + 0.05f * progress.value
-                        scaleX = scale
-                        scaleY = scale
-                        translationX = drift * 26f * progress.value
-                        translationY = -16f * progress.value
-                    }
                     // 6dp：留住风景的层次，又不至于让玻璃面板显脏
                     .blur(6.dp),
                 contentScale = ContentScale.Crop,
