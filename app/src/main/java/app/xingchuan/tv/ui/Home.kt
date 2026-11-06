@@ -55,6 +55,7 @@ import app.xingchuan.tv.core.AppItem
 import app.xingchuan.tv.core.Apps
 import app.xingchuan.tv.core.Guard
 import app.xingchuan.tv.core.LauncherModel
+import app.xingchuan.tv.core.Shortcuts
 import app.xingchuan.tv.core.WallpaperSpec
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -66,10 +67,9 @@ import java.util.Locale
  * 5 × 156 + 4 × 16 = 844dp，刚好放下；改成 6 张会溢出屏幕。
  */
 private const val SHELF_COUNT = 5
-private val WEEKDAYS = arrayOf("周日", "周一", "周二", "周三", "周四", "周五", "周六")
 
-/** 桌面上的三个焦点区。视频壁纸、抽屉、设置都是覆盖层，不参与这里的上下切换。 */
-private enum class Zone { Shelf, Dock }
+/** 桌面上的焦点区。视频壁纸、抽屉、设置都是覆盖层，不参与这里的上下切换。 */
+private enum class Zone { Top, Shelf, Dock }
 
 @Composable
 fun HomeScreen(model: LauncherModel) {
@@ -83,8 +83,17 @@ fun HomeScreen(model: LauncherModel) {
     var gridIndex by remember { mutableStateOf(0) }
     var settingIndex by remember { mutableStateOf(0) }
 
-    // 「菜单键 设置」提示：进桌面 6 秒后淡出，任何按键都让它重新亮起，避免常驻打扰
-    var hintTick by remember { mutableIntStateOf(0) }
+    // 顶栏胶囊：焦点索引（不在顶栏时不使用）
+    var topIndex by remember { mutableStateOf(0) }
+    var aboutOpen by remember { mutableStateOf(false) }
+    // 联网方式（有线网络 / 无线网络 / 未连接），只读网卡状态，不发请求
+    var netLabel by remember { mutableStateOf(Shortcuts.networkLabel()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            netLabel = Shortcuts.networkLabel()
+            delay(15_000)
+        }
+    }
 
     // 守护要「已开启」且「系统里确实勾选了无障碍服务」才算真正生效，两者缺一都不能显示为开
     var guardOn by remember { mutableStateOf(false) }
@@ -165,10 +174,33 @@ fun HomeScreen(model: LauncherModel) {
             }
         }
 
+        fun activateTop(i: Int) {
+            when (TopSlot.entries[i]) {
+                // 输入源由系统 TvInputService 管理，第三方应用无切换权限，如实提示而不是假装能切
+                TopSlot.Source -> Toast.makeText(
+                    ctx,
+                    "输入源请按遥控器上的「信号源」键切换",
+                    Toast.LENGTH_LONG,
+                ).show()
+                TopSlot.Network -> if (!Shortcuts.openNetworkSettings(ctx)) {
+                    Toast.makeText(ctx, "打不开网络设置", Toast.LENGTH_SHORT).show()
+                }
+                TopSlot.Settings -> {
+                    model.settingsOpen = true
+                    settingIndex = 0
+                }
+                TopSlot.About -> aboutOpen = true
+            }
+        }
+
         fun handleKey(e: KeyEvent): Boolean {
             if (e.type != KeyEventType.KeyDown) return false
-            // 一有操作就把设置提示重新点亮，6 秒后再次淡出
-            hintTick++
+
+            // 关于面板：任意键关闭
+            if (aboutOpen) {
+                aboutOpen = false
+                return true
+            }
 
             // 设置面板：两行网格导航（左右同行走动，上下跨行）
             if (model.settingsOpen) {
@@ -233,41 +265,53 @@ fun HomeScreen(model: LauncherModel) {
                 }
             }
 
-            // 主屏：推荐位 <-> Dock，下键进入抽屉
+            // 主屏：顶栏 <-> 推荐位 <-> Dock，Dock 下键进入抽屉
             return when (e.key) {
                 Key.DirectionLeft -> {
-                    if (zone == Zone.Dock) dockIndex = (dockIndex - 1).coerceAtLeast(0)
-                    else shelfIndex = (shelfIndex - 1).coerceAtLeast(0)
+                    when (zone) {
+                        Zone.Top -> if (topIndex > 0) topIndex--
+                        Zone.Dock -> dockIndex = (dockIndex - 1).coerceAtLeast(0)
+                        Zone.Shelf -> shelfIndex = (shelfIndex - 1).coerceAtLeast(0)
+                    }
                     true
                 }
                 Key.DirectionRight -> {
-                    if (zone == Zone.Dock) dockIndex = (dockIndex + 1).coerceAtMost(dockSlots - 1)
-                    else shelfIndex = (shelfIndex + 1).coerceAtMost(shelfApps.lastIndex.coerceAtLeast(0))
+                    when (zone) {
+                        Zone.Top -> if (topIndex < TOP_SLOT_COUNT - 1) topIndex++
+                        Zone.Dock -> dockIndex = (dockIndex + 1).coerceAtMost(dockSlots - 1)
+                        Zone.Shelf ->
+                            shelfIndex = (shelfIndex + 1).coerceAtMost(shelfApps.lastIndex.coerceAtLeast(0))
+                    }
                     true
                 }
                 Key.DirectionUp -> {
-                    // 应用很少时推荐位可能为空，此时上键不移动焦点，避免“焦点消失”
-                    if (zone == Zone.Dock && shelfApps.isNotEmpty()) zone = Zone.Shelf
+                    // 推荐位为空时也不能让焦点消失，Dock 上键直接落到顶栏
+                    when (zone) {
+                        Zone.Top -> Unit
+                        Zone.Shelf -> zone = Zone.Top
+                        Zone.Dock -> zone = if (shelfApps.isNotEmpty()) Zone.Shelf else Zone.Top
+                    }
                     true
                 }
                 Key.DirectionDown -> {
-                    if (zone == Zone.Shelf) {
-                        zone = Zone.Dock
-                    } else {
-                        model.drawerOpen = true
-                        gridIndex = 0
+                    when (zone) {
+                        Zone.Top -> zone = if (shelfApps.isNotEmpty()) Zone.Shelf else Zone.Dock
+                        Zone.Shelf -> zone = Zone.Dock
+                        Zone.Dock -> {
+                            model.drawerOpen = true
+                            gridIndex = 0
+                        }
                     }
                     true
                 }
                 Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
-                    if (zone == Zone.Dock) {
-                        if (dockIndex < dockApps.size) open(dockApps[dockIndex])
-                        else {
+                    when (zone) {
+                        Zone.Top -> activateTop(topIndex)
+                        Zone.Dock -> if (dockIndex < dockApps.size) open(dockApps[dockIndex]) else {
                             model.drawerOpen = true
                             gridIndex = 0
                         }
-                    } else {
-                        shelfApps.getOrNull(shelfIndex)?.let { open(it) }
+                        Zone.Shelf -> shelfApps.getOrNull(shelfIndex)?.let { open(it) }
                     }
                     true
                 }
@@ -289,7 +333,12 @@ fun HomeScreen(model: LauncherModel) {
                 .fillMaxSize()
                 .padding(horizontal = (56 * s).dp, vertical = (36 * s).dp),
         ) {
-            TopBar(now = now, s = s, hintTick = hintTick)
+            TopBar(
+                now = now,
+                s = s,
+                focusedIndex = if (zone == Zone.Top) topIndex else -1,
+                networkLabel = netLabel,
+            )
             Spacer(Modifier.weight(1f))
             if (shelfApps.isNotEmpty()) {
                 ShelfRow(
@@ -325,6 +374,10 @@ fun HomeScreen(model: LauncherModel) {
             )
         }
 
+        if (aboutOpen) {
+            AboutOverlay(guardOn = guardOn, s = s)
+        }
+
         if (model.loading && visible.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Txt("正在读取应用…", Type.Title, color = Ink.TextDim)
@@ -339,69 +392,6 @@ fun HomeScreen(model: LauncherModel) {
                 .focusable()
                 .onKeyEvent { handleKey(it) }
         )
-    }
-}
-
-@Composable
-private fun TopBar(now: Calendar, s: Float, hintTick: Int) {
-    val time = remember(now) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now.time) }
-    val date = remember(now) {
-        val w = WEEKDAYS[now.get(Calendar.DAY_OF_WEEK) - 1]
-        "${now.get(Calendar.MONTH) + 1}月${now.get(Calendar.DAY_OF_MONTH)}日  $w"
-    }
-
-    // 提示只在刚进桌面 / 刚按键时可见，静置 6 秒后淡到几乎透明
-    var hintOn by remember { mutableStateOf(true) }
-    LaunchedEffect(hintTick) {
-        hintOn = true
-        delay(6_000)
-        hintOn = false
-    }
-    val hintAlpha by animateFloatAsState(
-        targetValue = if (hintOn) 1f else 0.18f,
-        animationSpec = tween(600),
-        label = "hint",
-    )
-
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        Column {
-            Txt(
-                text = time,
-                style = Type.Clock.copy(fontSize = (64 * s).sp, letterSpacing = 2.sp),
-            )
-            Spacer(Modifier.height((6 * s).dp))
-            Txt(text = date, style = Type.Date.copy(fontSize = (19 * s).sp))
-        }
-        Spacer(Modifier.weight(1f))
-        Column(horizontalAlignment = Alignment.End) {
-            Wordmark(s)
-            Spacer(Modifier.height((4 * s).dp))
-            Txt(text = "STAR RIVER TV", style = Type.Badge.copy(fontSize = (11 * s).sp))
-            Spacer(Modifier.height((14 * s).dp))
-            Box(Modifier.alpha(hintAlpha)) { HintChip("菜单键 设置", s) }
-        }
-    }
-}
-
-@Composable
-private fun Wordmark(s: Float) {
-    Txt(
-        text = "星川",
-        style = Type.Title.copy(fontSize = (22 * s).sp),
-        color = Color(0xFFE9F0FF),
-    )
-}
-
-@Composable
-private fun HintChip(text: String, s: Float) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape((30 * s).dp))
-            .background(Color(0x1FFFFFFF))
-            .border(1.dp, Ink.GlassStroke, RoundedCornerShape((30 * s).dp))
-            .padding(horizontal = (14 * s).dp, vertical = (7 * s).dp)
-    ) {
-        Txt(text = text, style = Type.Hint.copy(fontSize = (12 * s).sp), color = Ink.Text)
     }
 }
 

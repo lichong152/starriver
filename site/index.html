@@ -273,13 +273,20 @@
           是你自己用出来的顺序，不是运营编辑挑的。应用抽屉网格排布，遥控器五向键全程可达。</p>
       </div>
       <div class="card">
-        <div class="no">05 — BOOT</div>
+        <div class="no">05 — TOP BAR</div>
+        <h3>顶栏：问候语、大时钟、四枚胶囊。</h3>
+        <p>左上「早上好 / 晚上好」随时间变化，右侧 <b>信号源 · 联网方式 · 设置 · 关于</b> 四枚胶囊，
+          遥控器上键即可进入，左右切换、确认执行。联网方式是读本机网卡状态得出的，
+          <b>不申请任何权限</b>，也不联网。</p>
+      </div>
+      <div class="card">
+        <div class="no">06 — BOOT</div>
         <h3>开机即达。</h3>
         <p>注册开机自启，重启电视后<b>直接进入星川</b>，不需要按一次主页键「激活」。
           已在 Android 9 实机验证：重启完成 → 前台即星川桌面。</p>
       </div>
       <div class="card">
-        <div class="no">06 — PRIVACY</div>
+        <div class="no">07 — PRIVACY</div>
         <h3>零联网、零账户。</h3>
         <p>桌面<b>不发起任何网络请求</b>，不读取账户、不注册通知监听、不申请 WRITE_SECURE_SETTINGS。
           壁纸全部内置在 APK 里。它是一块离线的画布，不是一双在线的眼睛。</p>
@@ -324,12 +331,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.6 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.1.0 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.6-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.1.0-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -346,10 +353,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.6</span>
-4b524a027ba2fa42e3cb1f5d64c4d7dd79b726864e1682736b2b3ca5cd52c78a  app-standard-release.apk
-<span class="cm"># guard · v1.0.6-guard</span>
-6b62140e5089c785b3993de34d69634e46a489854bf034bfe2d728f663caa7c2  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.1.0</span>
+8ee7f99a7c85e389dc62e0192f460f3582eaf3772ec4892cf17fbcb539890688  app-standard-release.apk
+<span class="cm"># guard · v1.1.0-guard</span>
+9ace74526a9aaf874d762833a1b69d1d37532a20ef57f7ab0077cb209fdd13e8  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -571,7 +578,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.0.6 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.1.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
