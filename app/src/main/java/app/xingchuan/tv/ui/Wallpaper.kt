@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.net.Uri
-import android.os.Build
 import android.util.LruCache
 import android.view.Surface
 import android.view.TextureView
@@ -37,6 +36,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.xingchuan.tv.core.Presets
 import app.xingchuan.tv.core.WallpaperSpec
 import kotlinx.coroutines.Dispatchers
@@ -262,11 +264,20 @@ private fun NatureWallpaper() {
 @Composable
 private fun VideoWallpaper(uri: Uri) {
     val ctx = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var surfaceReady by remember(uri) { mutableStateOf(false) }
     val player = remember(uri) { MediaPlayer() }
 
-    DisposableEffect(uri) {
+    DisposableEffect(uri, lifecycleOwner) {
+        // 部分固件在后台会暂停渲染，回前台后重新 start；未 prepare 完成时 start 会抛异常，吞掉即可
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && surfaceReady) {
+                runCatching { if (!player.isPlaying) player.start() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             runCatching {
                 player.setOnPreparedListener(null)
                 player.reset()
@@ -292,8 +303,8 @@ private fun VideoWallpaper(uri: Uri) {
                             player.setDataSource(ctx, uri)
                             player.setOnPreparedListener { it.start() }
                             player.prepareAsync()
+                            surfaceReady = true
                         }.onFailure { surfaceReady = false }
-                        surfaceReady = true
                     }
 
                     override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {}
@@ -312,13 +323,5 @@ private fun VideoWallpaper(uri: Uri) {
     if (!surfaceReady) {
         // 视频没起来时先铺一层深色，不会闪白
         Box(Modifier.fillMaxSize().background(Ink.Bg))
-    }
-    // 部分固件在后台会暂停渲染，回到前台重新启动一次
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            runCatching {
-                if (player.isPlaying) player.start()
-            }
-        }
     }
 }

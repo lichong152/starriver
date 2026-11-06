@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>星川 Star River TV — 让电视桌面，回到它该有的样子。</title>
 <meta name="description" content="星川是一个 Android TV 桌面（Launcher）：真实应用图标、自然风光壁纸轮播、液态玻璃 Dock、桌面守护。不需要 Root，完全离线，随时可回退。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M6 22c4-1 6-7 10-7s6 6 10 5' stroke='%236ea8ff' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='1.4' fill='%23cfe4ff'/%3E%3Ccircle cx='17' cy='7' r='1' fill='%238ad0ff'/%3E%3Ccircle cx='24' cy='11' r='1.2' fill='%23cfe4ff'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="星川 Star River TV — 让电视桌面，回到它该有的样子。">
+<meta property="og:description" content="真实应用图标、自然风光壁纸轮播、液态玻璃 Dock、桌面守护。Android 5.0+，不需要 Root，完全离线。">
+<meta property="og:image" content="https://raw.githubusercontent.com/lichong152/starriver/main/site/shots/tv-final2.png">
 <style>
   :root{
     --bg:#070b14;
@@ -319,12 +324,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.0 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.1 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.0-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.1-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -341,10 +346,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.0</span>
-eeb2d8b10454cb8fb3e688bd16d62793324b0d669fee8cc7e7779cfdf42d232d  app-standard-release.apk
-<span class="cm"># guard · v1.0.0-guard</span>
-2537948b221bc3d8491ec24dbfb743a3b282c38c9e80c9d88ce3fae91e109ea8  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.1</span>
+06bb1703e548dbe731d84362cacb3357a89428f60695e0f6041af3fd83e7de3b  app-standard-release.apk
+<span class="cm"># guard · v1.0.1-guard</span>
+cdadf8eac12c1880bf22f7e465e8cd1f94e6e2437e824011e819786ed5ce5597  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -566,7 +571,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.0.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.0.1 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

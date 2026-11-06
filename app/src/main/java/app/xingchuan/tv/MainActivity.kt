@@ -26,6 +26,10 @@ class MainActivity : ComponentActivity() {
     private val packageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.data?.scheme != "package") return
+            // 覆盖安装时系统会连发 ADDED(EXTRA_REPLACING=true) 和 REPLACED 两条，只处理后者
+            if (intent.action == Intent.ACTION_PACKAGE_ADDED &&
+                intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+            ) return
             // 同一个包升级后图标可能换掉，缓存必须先失效
             Icons.clear()
             reload()
@@ -35,12 +39,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        // 桌面常驻，避免按键时状态栏被拉起
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-        )
-
         model = LauncherModel(applicationContext)
         setContent { HomeScreen(model) }
         reload()

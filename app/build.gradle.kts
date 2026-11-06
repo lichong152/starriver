@@ -16,8 +16,8 @@ android {
         // Android 5.0 —— 国产电视存量机型覆盖面最大的一档。
         minSdk = 21
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     // standard: 正常声明 HOME，作为系统桌面。
@@ -47,8 +47,14 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // R8 混淆 + 资源收缩：不开启时 classes.dex 达 16 MB（Compose 依赖全量打进包），
+            // 开启后缩到 ~4 MB。工程无反射、无序列化库，默认规则即可。
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             signingConfig = signingConfigs.findByName("stable") ?: signingConfigs.getByName("debug")
         }
     }
@@ -85,5 +91,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
+    // 提供 lifecycle.compose.LocalLifecycleOwner，供视频壁纸在回前台时恢复播放
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.2")
     testImplementation("junit:junit:4.13.2")
 }

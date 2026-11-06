@@ -9,7 +9,7 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 刻意不声明 INTERNET：桌面不发起任何网络请求，壁纸全部内置，权限面越小越好 -->
     <!-- guard 形态开机自启；standard 形态系统本就会拉起桌面，属冗余声明 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
