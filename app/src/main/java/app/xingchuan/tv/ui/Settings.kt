@@ -32,12 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.xingchuan.tv.core.LauncherModel
 import app.xingchuan.tv.core.Presets
+import app.xingchuan.tv.core.WallpaperGroup
+import app.xingchuan.tv.core.WallpaperGroups
 import app.xingchuan.tv.core.WallpaperPreset
 import app.xingchuan.tv.core.WallpaperSpec
 
 sealed interface SettingItem {
     data class Preset(val preset: WallpaperPreset) : SettingItem
-    data object NatureWall : SettingItem
+    data class GroupWall(val group: WallpaperGroup) : SettingItem
     data object PickImage : SettingItem
     data object PickVideo : SettingItem
     data object GuardToggle : SettingItem
@@ -46,18 +48,26 @@ sealed interface SettingItem {
 }
 
 object SettingsItems {
+    /**
+     * 14 格，按两行排：一行 7 个刚好填满 960dp 面板（7×66 + 6×8 = 510dp，留足边距）。
+     * 顺序即导航顺序，第 8 格是第二行第一格。
+     */
+    const val PER_ROW = 7
+
     val all: List<SettingItem> =
-        Presets.all.map { SettingItem.Preset(it) } +
+        WallpaperGroups.all.map { SettingItem.GroupWall(it) } +
             listOf(
-                SettingItem.NatureWall,
                 SettingItem.PickImage,
                 SettingItem.PickVideo,
                 SettingItem.GuardToggle,
                 SettingItem.Unhide,
                 SettingItem.Reset,
-            )
+            ) +
+            Presets.all.map { SettingItem.Preset(it) }
 
     val total: Int get() = all.size
+
+    val rows: List<List<SettingItem>> get() = all.chunked(PER_ROW)
 }
 
 /** 壁纸选择器。电视上多数固件没有 DocumentsUI，SAF 打不开时给出提示而不是崩掉。 */
@@ -152,24 +162,34 @@ fun SettingsOverlay(
                     )
                 }
                 Spacer(Modifier.height((20 * s).dp))
-                Row(horizontalArrangement = Arrangement.spacedBy((8 * s).dp)) {
-                    SettingsItems.all.forEachIndexed { i, item ->
-                        SettingTile(
-                            item = item,
-                            focused = i == focusedIndex,
-                            selected = (item is SettingItem.Preset &&
-                                (model.wallpaper as? WallpaperSpec.Preset)?.id == item.preset.id) ||
-                                (item is SettingItem.NatureWall &&
-                                    model.wallpaper is WallpaperSpec.Nature),
-                            guardOn = guardOn,
-                            hiddenCount = model.hidden.size,
-                            s = s,
-                        )
+                SettingsItems.rows.forEachIndexed { rowIdx, row ->
+                    if (rowIdx > 0) Spacer(Modifier.height((10 * s).dp))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy((8 * s).dp),
+                    ) {
+                        row.forEachIndexed { colIdx, item ->
+                            SettingTile(
+                                item = item,
+                                modifier = Modifier.weight(1f),
+                                focused = rowIdx * SettingsItems.PER_ROW + colIdx == focusedIndex,
+                                selected = when (item) {
+                                    is SettingItem.Preset ->
+                                        (model.wallpaper as? WallpaperSpec.Preset)?.id == item.preset.id
+                                    is SettingItem.GroupWall ->
+                                        (model.wallpaper as? WallpaperSpec.Group)?.id == item.group.id
+                                    else -> false
+                                },
+                                guardOn = guardOn,
+                                hiddenCount = model.hidden.size,
+                                s = s,
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height((18 * s).dp))
                 Txt(
-                    text = "壁纸即时生效。「风光轮播」为内置超清风景，约 24 秒换一张。「守护·开」需在系统无障碍里勾选星川桌面守护。",
+                    text = "壁纸即时生效。四组内置轮播各 10 张，每 30 秒换一张；「守护·开」需在系统无障碍里勾选星川桌面守护。",
                     style = Type.Hint.copy(fontSize = (12 * s).sp),
                     maxLines = 2,
                 )
@@ -181,6 +201,7 @@ fun SettingsOverlay(
 @Composable
 private fun SettingTile(
     item: SettingItem,
+    modifier: Modifier = Modifier,
     focused: Boolean,
     selected: Boolean,
     hiddenCount: Int,
@@ -189,8 +210,7 @@ private fun SettingTile(
 ) {
     val shape = RoundedCornerShape((18 * s).dp)
     Column(
-        modifier = Modifier
-            .width((66 * s).dp)
+        modifier = modifier
             .clip(shape)
             .background(if (focused) Color(0x26FFFFFF) else Color(0x0DFFFFFF))
             .border(
@@ -225,7 +245,7 @@ private fun SettingTile(
 
             else -> {
                 val (glyph, label) = when (item) {
-                    SettingItem.NatureWall -> "景" to "风光轮播"
+                    is SettingItem.GroupWall -> item.group.glyph to item.group.name
                     SettingItem.PickImage -> "图" to "选择图片"
                     SettingItem.PickVideo -> "影" to "选择视频"
                     SettingItem.GuardToggle -> "守" to if (guardOn) "守护·开" else "守护·关"

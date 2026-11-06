@@ -256,7 +256,7 @@
       <div class="card">
         <div class="no">02 — WALLPAPER</div>
         <h3>自然风光，会呼吸。</h3>
-        <p>内置 6 张 4K 自然风光图，<b>24 秒交叉淡入 + 缓慢推近</b>，像一扇缓缓变换的窗。
+        <p>内置 40 张超清壁纸，分自然风光 / 城市夜色 / 星空银河 / 山野光影四组，<b>30 秒交叉淡入 + 缓慢推近</b>，像一扇缓缓变换的窗。
           按屏幕宽度降采样加载，1080p 电视不浪费一比特内存。也可以换成你自己的图片或视频。</p>
       </div>
       <div class="card">
@@ -305,7 +305,7 @@
       </div>
       <div class="shot">
         <img src="shots/tv-settings2.png" alt="设置面板">
-        <div class="cap"><b>设置面板</b> — 壁纸、守护、隐藏应用恢复，11 格不溢出</div>
+        <div class="cap"><b>设置面板</b> — 壁纸、守护、隐藏应用恢复，14 格不溢出</div>
       </div>
       <div class="shot">
         <img src="shots/tv-guard-on.png" alt="守护开启状态">
@@ -324,19 +324,19 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.1 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.0.3 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.1-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.0.3-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
     </table>
     <div class="cta" style="justify-content:flex-start;margin:30px 0 8px">
-      <a class="btn primary" href="https://github.com/lichong152/starriver/releases/latest/download/app-standard-release.apk">下载标准版 · 26 MB</a>
-      <a class="btn ghost" href="https://github.com/lichong152/starriver/releases/latest/download/app-guard-release.apk">下载守护版 · 26 MB</a>
+      <a class="btn primary" href="https://github.com/lichong152/starriver/releases/latest/download/app-standard-release.apk">下载标准版 · 21 MB</a>
+      <a class="btn ghost" href="https://github.com/lichong152/starriver/releases/latest/download/app-guard-release.apk">下载守护版 · 21 MB</a>
       <a class="btn ghost" href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">全部版本 ↗</a>
     </div>
     <p class="hint">
@@ -346,10 +346,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.1</span>
-06bb1703e548dbe731d84362cacb3357a89428f60695e0f6041af3fd83e7de3b  app-standard-release.apk
-<span class="cm"># guard · v1.0.1-guard</span>
-cdadf8eac12c1880bf22f7e465e8cd1f94e6e2437e824011e819786ed5ce5597  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.0.3</span>
+e2aab3184ffd582e36470b7b9912347f94a0841c3167bba67907670ecdbd02ea  app-standard-release.apk
+<span class="cm"># guard · v1.0.3-guard</span>
+58f70d71024b35ac3b1178c0d6f012e74d25812c0ff55b0e52eccb2a9613c3bb  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -510,7 +510,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>主页键</b></td><td class="pass">通过（依赖守护）</td><td>未开守护时落到 <code>com.stv.deskplatform</code>；开守护后连按 3 次均在 1.5 秒内回到星川，无来回抢焦点，logcat 无 ANR</td></tr>
       <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
       <tr><td><b>待机唤醒</b></td><td class="untested">未测</td><td>需要用户按遥控器电源键，尚未执行（不能用 adb 发电源键，会真的关机）</td></tr>
-      <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>11 格设置不溢出；抽屉 18 项五向键可达</td></tr>
+      <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>14 格设置不溢出；抽屉 18 项五向键可达</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
   </div>
@@ -551,7 +551,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <details>
         <summary>壁纸能换成自己的吗？</summary>
         <div class="ans">可以：设置里可选自定义图片或视频。但注意——选文件依赖系统文件选择器（SAF），
-          不少电视固件没有 DocumentsUI，此时只能用内置的 6 张自然风光图或渐变色。这是固件缺失，不是安装失败。</div>
+          不少电视固件没有 DocumentsUI，此时只能用内置的 40 张壁纸或渐变色。这是固件缺失，不是安装失败。</div>
       </details>
       <details>
         <summary>和 xinghe-desktop、Tigris 是什么关系？</summary>
@@ -571,7 +571,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.0.1 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.0.3 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

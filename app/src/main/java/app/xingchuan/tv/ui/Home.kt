@@ -138,7 +138,7 @@ fun HomeScreen(model: LauncherModel) {
         fun activateSetting(i: Int) {
             when (val item = SettingsItems.all.getOrNull(i) ?: return) {
                 is SettingItem.Preset -> model.changeWallpaper(WallpaperSpec.Preset(item.preset.id))
-                SettingItem.NatureWall -> model.changeWallpaper(WallpaperSpec.Nature)
+                is SettingItem.GroupWall -> model.changeWallpaper(WallpaperSpec.Group(item.group.id))
                 SettingItem.PickImage -> picker.image()
                 SettingItem.PickVideo -> picker.video()
                 SettingItem.GuardToggle -> {
@@ -160,15 +160,23 @@ fun HomeScreen(model: LauncherModel) {
         fun handleKey(e: KeyEvent): Boolean {
             if (e.type != KeyEventType.KeyDown) return false
 
-            // 设置面板：横向线性导航
+            // 设置面板：两行网格导航（左右同行走动，上下跨行）
             if (model.settingsOpen) {
                 val n = SettingsItems.total
+                val col = SettingsItems.PER_ROW
                 return when (e.key) {
                     Key.DirectionLeft -> {
-                        settingIndex = (settingIndex - 1).coerceAtLeast(0); true
+                        if (settingIndex % col != 0) settingIndex--; true
                     }
                     Key.DirectionRight -> {
-                        settingIndex = (settingIndex + 1).coerceAtMost(n - 1); true
+                        if (settingIndex % col != col - 1 && settingIndex + 1 < n) settingIndex++; true
+                    }
+                    Key.DirectionUp -> {
+                        if (settingIndex >= col) settingIndex -= col; true
+                    }
+                    Key.DirectionDown -> {
+                        val next = settingIndex + col
+                        if (next < n) settingIndex = next; true
                     }
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
                         activateSetting(settingIndex); true

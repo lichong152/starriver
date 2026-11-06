@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 
 /**
- * 壁纸来源。四种形态：内置渐变、内置风光轮播、本地图片、本地视频。
+ * 壁纸来源。四种形态：内置渐变、内置分组轮播、本地图片、本地视频。
  * 序列化进 SharedPreferences，格式 `<type>:<value>`。
  */
 sealed interface WallpaperSpec {
@@ -15,18 +15,18 @@ sealed interface WallpaperSpec {
     data class Picture(val uri: String) : WallpaperSpec
     data class Video(val uri: String) : WallpaperSpec
 
-    /** 内置风光轮播：assets/wallpapers 下的超清自然风光图，定时缓慢轮换。 */
-    data object Nature : WallpaperSpec
+    /** 内置分组轮播：assets/wallpapers 下以 `<id>-` 开头的图，每 30 秒换一张。 */
+    data class Group(val id: String) : WallpaperSpec
 
     fun encode(): String = when (this) {
         is Preset -> "preset:$id"
         is Picture -> "image:$uri"
         is Video -> "video:$uri"
-        Nature -> "nature:auto"
+        is Group -> "group:$id"
     }
 
     companion object {
-        val Default: WallpaperSpec = Nature
+        val Default: WallpaperSpec = Group(WallpaperGroups.DefaultId)
 
         fun decode(raw: String?): WallpaperSpec {
             if (raw.isNullOrBlank()) return Default
@@ -35,7 +35,9 @@ sealed interface WallpaperSpec {
             val type = raw.substring(0, cut)
             val value = raw.substring(cut + 1).takeIf { it.isNotBlank() } ?: return Default
             return when (type) {
-                "nature" -> Nature
+                "group" -> Group(WallpaperGroups.require(value).id)
+                // v1.0.2 及更早存的是 nature:auto，落到默认组，不让用户升级后壁纸变回渐变
+                "nature" -> Group(WallpaperGroups.DefaultId)
                 "preset" -> Preset(value)
                 "image" -> Picture(value)
                 "video" -> Video(value)
@@ -43,6 +45,27 @@ sealed interface WallpaperSpec {
             }
         }
     }
+}
+
+/** 内置轮播分组。assets/wallpapers 下以 `<id>-` 开头的 jpg 都归这一组，按文件名排序播放。 */
+data class WallpaperGroup(
+    val id: String,
+    val name: String,
+    val glyph: String,
+    val hint: String,
+)
+
+object WallpaperGroups {
+    const val DefaultId = "nature"
+
+    val all: List<WallpaperGroup> = listOf(
+        WallpaperGroup("nature", "自然风光", "景", "山川湖海与林间光，10 张"),
+        WallpaperGroup("city", "城市夜色", "城", "天际线与霓虹，10 张"),
+        WallpaperGroup("space", "星空银河", "星", "银河、星野与地球弧线，10 张"),
+        WallpaperGroup("zen", "山野光影", "野", "林间、瀑布与暮色，10 张"),
+    )
+
+    fun require(id: String): WallpaperGroup = all.firstOrNull { it.id == id } ?: all.first()
 }
 
 /** 内置渐变壁纸。颜色自下而上过渡，电视上比照片更耐看、也更省内存。 */

@@ -57,7 +57,7 @@ fun WallpaperLayer(spec: WallpaperSpec, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize()) {
         when (spec) {
             is WallpaperSpec.Preset -> PresetWallpaper(spec.id)
-            WallpaperSpec.Nature -> NatureWallpaper()
+            is WallpaperSpec.Group -> GroupWallpaper(spec.id)
             is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri))
             is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri))
         }
@@ -139,20 +139,20 @@ private fun decodeScaled(ctx: Context, uri: Uri, targetW: Int): Bitmap? = try {
 }
 
 /**
- * 内置风光轮播。
+ * 内置分组轮播。
  *
- * 图片放在 `assets/wallpapers/`，按文件名排序播放，所以增删图片不用改代码。
- * 每张停留 24 秒，切换时 1.5 秒交叉淡入，同时做极慢的推近 / 平移（Ken Burns），
- * 静止的风景在电视上才不会显得"卡住了"。
+ * 图片放在 `assets/wallpapers/`，以 `<分组id>-` 开头；同一组内按文件名排序播放，
+ * 所以增删图片不用改代码。每组 10 张，每张停留 30 秒，切换时 1.5 秒交叉淡入，
+ * 同时做极慢的推近 / 平移（Ken Burns），静止的风景在电视上才不会显得"卡住了"。
  *
- * 内存上做了两件事：解码时就地降采样（3840 宽的原图按 1/2 取，落 1920×1080），
+ * 内存上做了两件事：解码时就地降采样（按屏幕宽度取 1920 或 2560），
  * 配置用 RGB_565 省一半；LruCache 只留 3 张（上一张 / 当前 / 下一张），
  * 一百多兆的相册型桌面不是这里要的东西。
  */
-private const val NATURE_INTERVAL_MS = 24_000L
-private const val NATURE_FADE_MS = 1_500
+private const val GROUP_INTERVAL_MS = 30_000L
+private const val GROUP_FADE_MS = 1_500
 
-private object NatureFrames {
+private object GroupFrames {
     private val cache = object : LruCache<String, ImageBitmap>(3) {}
 
     fun peek(name: String): ImageBitmap? = cache.get(name)
@@ -181,10 +181,14 @@ private object NatureFrames {
 }
 
 @Composable
-private fun NatureWallpaper() {
+private fun GroupWallpaper(prefix: String) {
     val ctx = LocalContext.current
-    val files = remember {
-        runCatching { ctx.assets.list("wallpapers")?.sorted() }.getOrNull().orEmpty()
+    val files = remember(prefix) {
+        runCatching {
+            ctx.assets.list("wallpapers")
+                ?.filter { it.startsWith("$prefix-") }
+                ?.sorted()
+        }.getOrNull().orEmpty()
     }
 
     if (files.isEmpty()) {
@@ -197,33 +201,33 @@ private fun NatureWallpaper() {
         ctx.resources.displayMetrics.widthPixels.coerceIn(1280, 2560)
     }
 
-    var index by remember { mutableIntStateOf(0) }
+    var index by remember(prefix) { mutableIntStateOf(0) }
     // 首批解码完成前先铺底色，避免首帧闪白
-    var ready by remember { mutableIntStateOf(0) }
+    var ready by remember(prefix) { mutableIntStateOf(0) }
 
     LaunchedEffect(files) {
         withContext(Dispatchers.IO) {
-            NatureFrames.load(ctx, files[0], targetW)
-            if (files.size > 1) NatureFrames.load(ctx, files[1], targetW)
+            GroupFrames.load(ctx, files[0], targetW)
+            if (files.size > 1) GroupFrames.load(ctx, files[1], targetW)
         }
         ready = 1
         while (true) {
-            delay(NATURE_INTERVAL_MS)
+            delay(GROUP_INTERVAL_MS)
             val next = (index + 1) % files.size
             index = next
             // 展示新的一张的同时，把再下一张解好，轮到它时不用等 IO
             withContext(Dispatchers.IO) {
-                NatureFrames.load(ctx, files[(next + 1) % files.size], targetW)
+                GroupFrames.load(ctx, files[(next + 1) % files.size], targetW)
             }
         }
     }
 
     Crossfade(
         targetState = index,
-        animationSpec = tween(NATURE_FADE_MS),
-        label = "nature",
+        animationSpec = tween(GROUP_FADE_MS),
+        label = "group-$prefix",
     ) { i ->
-        val bmp = if (ready > 0) NatureFrames.peek(files[i]) else null
+        val bmp = if (ready > 0) GroupFrames.peek(files[i]) else null
         if (bmp == null) {
             Box(Modifier.fillMaxSize().background(Ink.Bg))
         } else {
@@ -231,7 +235,7 @@ private fun NatureWallpaper() {
             LaunchedEffect(i) {
                 progress.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(NATURE_INTERVAL_MS.toInt(), easing = LinearEasing),
+                    animationSpec = tween(GROUP_INTERVAL_MS.toInt(), easing = LinearEasing),
                 )
             }
             val drift = if (i % 2 == 0) 1f else -1f
