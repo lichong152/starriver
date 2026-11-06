@@ -226,7 +226,7 @@
     </div>
 
     <div class="tv">
-      <img src="shots/tv-final2.png" alt="星川桌面实拍：自然风光壁纸、时钟、推荐位与玻璃 Dock">
+      <img src="shots/tv-final2.jpg" alt="星川桌面实拍：雪山日落壁纸、带秒的时钟、推荐位与玻璃 Dock">
     </div>
     <p class="shot-cap">实机截图 · Droidlogic ak30a4 · Android 9 · 1920×1080 · 2026-11-03</p>
 
@@ -290,7 +290,7 @@
       <div class="card">
         <div class="no">07 — SCREEN SAVER</div>
         <h3>待机的时候，也有四张脸。</h3>
-        <p>四套屏保：<b>大时钟</b>（深色渐变 + 超大时间）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
+        <p>四套屏保：<b>大时钟</b>（深色渐变 + 超大时间，精确到分）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
           <b>星空</b>（星点缓慢漂移闪烁）、<b>极简</b>（纯黑 + 角落小字）。在设置里一键切换，
           选「关闭」就把系统原本的屏保还回去。只在被系统选中为屏保时运行，不常驻。</p>
       </div>
@@ -312,8 +312,8 @@
     <p class="lead">以下均来自真机 adb screencap 原图，未修饰。</p>
     <div class="shots">
       <div class="shot">
-        <img src="shots/tv-final2.png" alt="星川主界面">
-        <div class="cap"><b>主界面</b> — 时钟、日期、推荐位、玻璃 Dock</div>
+        <img src="shots/tv-final2.jpg" alt="星川主界面">
+        <div class="cap"><b>主界面</b> — 精确到秒的时钟、日期、推荐位、玻璃 Dock</div>
       </div>
       <div class="shot">
         <img src="shots/tv-drawer.png" alt="全部应用抽屉">
@@ -326,6 +326,10 @@
       <div class="shot">
         <img src="shots/tv-guard-on.png" alt="守护开启状态">
         <div class="cap"><b>守护·开</b> — 原厂桌面回前台时自动拉回星川</div>
+      </div>
+      <div class="shot">
+        <img src="shots/tv-dream.png" alt="星川屏保：星空">
+        <div class="cap"><b>待机屏保·星空</b> — 四套样式可切，另有壁纸幻灯、大时钟、极简</div>
       </div>
     </div>
   </div>
@@ -363,9 +367,9 @@
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
     <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.2</span>
-e6244efddbb0f7f511ef6b6e9eec680c3b4c302e8d4d9a7ba412ee5ec5d9df00  app-standard-release.apk
+285e1dc02d9d90e9a514ace76e1227de9f239b50b67c3f358832bd137b58e24d  app-standard-release.apk
 <span class="cm"># guard · v1.2.2-guard</span>
-59e4d0d30bb10147fd6608e285ff6dcd7bb658495049297b1e10943b970de66e  app-guard-release.apk</pre>
+9df00316d03e10bad5574a092af4dcb9cb7b1beb9803ab4f4e065dc746cfc026  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -527,8 +531,8 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
       <tr><td><b>待机唤醒</b></td><td class="pass">通过</td><td>遥控器电源键待机约 5 秒再唤醒；<code>mResumedActivity</code> 与 <code>mCurrentFocus</code> 都是 <code>app.xingchuan.tv/.MainActivity</code>，没落回厂商桌面（2026-11-07）</td></tr>
       <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>16 格设置（四行）不溢出；抽屉 18 项五向键可达</td></tr>
-      <tr><td><b>时钟带秒 / Dock 两行名（v1.2.2）</b></td><td class="pass">通过</td><td>顶栏显示 <code>13:42 28</code>，秒按整秒刷新不抖；应用名最多两行并按字数缩字号，「超级电视账号」完整显示</td></tr>
-      <tr><td><b>待机屏保（v1.2.2）</b></td><td class="pass">通过</td><td>设置里切样式后 <code>screensaver_components</code> 指向 <code>app.xingchuan.tv/.ScreensaverService</code>；把待机时间调短后 <code>mWakefulness=Dreaming</code>，壁纸幻灯与星空均正常渲染</td></tr>
+      <tr><td><b>时钟带秒 / Dock 两行名（v1.2.2）</b></td><td class="pass">通过</td><td>顶栏显示 <code>14:09:23</code>，秒与分钟同字号、冒号分隔，数字等宽所以秒跳变时日期不移动；应用名最多两行并按字数缩字号，「超级电视账号」完整显示</td></tr>
+      <tr><td><b>待机屏保（v1.2.2）</b></td><td class="pass">通过</td><td>设置里切样式后 <code>screensaver_components</code> 指向 <code>app.xingchuan.tv/.ScreensaverService</code>；待机时间临时调短后 <code>mWakefulness=Dreaming</code>，四套样式逐个截图确认：大时钟与星空居中、壁纸幻灯左下角、极简右下角，均无裁切</td></tr>
       <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>

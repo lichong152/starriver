@@ -11,13 +11,16 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.service.dreams.DreamService
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -113,7 +116,9 @@ class ScreensaverService : DreamService() {
     private val handler = Handler(Looper.getMainLooper())
     private var style: ScreenSaverStyle = ScreenSaverStyle.Clock
     private var clockView: TextView? = null
-    private var dateView: TextView? = null
+
+    /** 日期字号相对时钟的比例，由各样式在 [clockView] 里设定。 */
+    private var dateRatio = 0.18f
     private var wallView: ImageView? = null
     private var starView: StarField? = null
     private var slides: List<String> = emptyList()
@@ -125,13 +130,7 @@ class ScreensaverService : DreamService() {
 
     private val tick = object : Runnable {
         override fun run() {
-            val now = Date()
-            clockView?.text = if (style == ScreenSaverStyle.Minimal) {
-                clockSecFmt.format(now)
-            } else {
-                clockFmt.format(now)
-            }
-            dateView?.text = dateFmt.format(now)
+            clockView?.text = styled(Date())
             handler.postDelayed(this, 1_000)
         }
     }
@@ -192,11 +191,9 @@ class ScreensaverService : DreamService() {
                         Color.parseColor("#05070D"),
                     ),
                 )
-                val c = clock(150f)
-                val d = sub(20f)
+                val c = clockText(150f, 20f, Gravity.CENTER)
                 clockView = c
-                dateView = d
-                root.addView(stack(c, d, 18f), centered())
+                root.addView(c, centered())
             }
 
             ScreenSaverStyle.Wallpaper -> {
@@ -208,11 +205,9 @@ class ScreensaverService : DreamService() {
                     View(this).apply { setBackgroundColor(Color.parseColor("#66040A14")) },
                     full(),
                 )
-                val c = clock(92f)
-                val d = sub(18f)
+                val c = clockText(92f, 18f, Gravity.START or Gravity.BOTTOM)
                 clockView = c
-                dateView = d
-                root.addView(stack(c, d, 10f), corner(Gravity.BOTTOM or Gravity.START, 72f, 52f))
+                root.addView(c, corner(Gravity.BOTTOM or Gravity.START, 72f, 52f))
             }
 
             ScreenSaverStyle.Stars -> {
@@ -220,48 +215,61 @@ class ScreensaverService : DreamService() {
                 val sf = StarField(this)
                 starView = sf
                 root.addView(sf, full())
-                val c = clock(108f)
-                val d = sub(18f)
+                val c = clockText(108f, 18f, Gravity.CENTER)
                 clockView = c
-                dateView = d
-                root.addView(stack(c, d, 14f), centered())
+                root.addView(c, centered())
             }
 
             ScreenSaverStyle.Minimal, ScreenSaverStyle.Off -> {
                 root.setBackgroundColor(Color.BLACK)
-                val c = clock(44f)
-                val d = sub(14f)
+                val c = clockText(44f, 14f, Gravity.END or Gravity.BOTTOM)
                 clockView = c
-                dateView = d
-                root.addView(stack(c, d, 8f), corner(Gravity.BOTTOM or Gravity.END, 52f, 40f))
+                root.addView(c, corner(Gravity.BOTTOM or Gravity.END, 52f, 40f))
             }
         }
         return root
     }
 
-    /** 时间 + 日期竖排。宽高都随内容，再由 FrameLayout 的 gravity 定位——
-     *  之前直接把 MATCH_PARENT 的 LinearLayout 塞进去，内部 gravity 在部分 ROM 上不生效，
-     *  时间会贴到左边（真机上就是这么歪的）。 */
-    private fun stack(c: View, d: View, gap: Float) = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(c)
-        addView(
-            d,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = px(gap) },
+    /**
+     * 时间与日期合成同一个 TextView，日期用 RelativeSizeSpan 缩小。
+     *
+     * 早先是两个 TextView 竖排在 LinearLayout 里、靠外层 WRAP_CONTENT + gravity 定位；
+     * 在这台电视的 ROM 上宽度被算错，时钟只剩「14」、日期整体偏左（v1.2.2 实测）。
+     * 单 TextView + 自身 gravity 不依赖父容器测量，最稳。
+     */
+    private fun clockText(sp: Float, dateSp: Float, align: Int) = TextView(this).apply {
+        dateRatio = dateSp / sp
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+        setTextColor(Color.parseColor("#F3F6FF"))
+        letterSpacing = 0.02f
+        includeFontPadding = false
+        gravity = align
+    }
+
+    /** 时间 \n 日期，日期行缩到 [dateRatio] 并用浅色。 */
+    private fun styled(now: Date): CharSequence {
+        val t = if (style == ScreenSaverStyle.Minimal) clockSecFmt.format(now) else clockFmt.format(now)
+        val d = dateFmt.format(now)
+        val sb = SpannableStringBuilder(t).append('\n').append(d)
+        val start = t.length + 1
+        sb.setSpan(RelativeSizeSpan(dateRatio), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(
+            ForegroundColorSpan(Color.parseColor("#B3C9D6EE")),
+            start,
+            sb.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         )
+        return sb
     }
 
     private fun centered() = FrameLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
         Gravity.CENTER,
     )
 
     private fun corner(gravity: Int, h: Float, v: Float) = FrameLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT,
         gravity,
     ).apply {
@@ -269,20 +277,6 @@ class ScreensaverService : DreamService() {
         rightMargin = px(h)
         topMargin = px(v)
         bottomMargin = px(v)
-    }
-
-    private fun clock(sp: Float) = TextView(this).apply {
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-        setTextColor(Color.parseColor("#F3F6FF"))
-        letterSpacing = 0.02f
-        includeFontPadding = false
-    }
-
-    private fun sub(sp: Float) = TextView(this).apply {
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-        setTextColor(Color.parseColor("#B3C9D6EE"))
-        letterSpacing = 0.06f
-        includeFontPadding = false
     }
 
     private fun full() = FrameLayout.LayoutParams(

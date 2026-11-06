@@ -402,16 +402,17 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 
 | 验收项 | 结果 | 依据 |
 |---|---|---|
-| 时钟带秒 | 通过 | `TopBar` 每秒刷新并对齐整秒（`delay(1000 - millis)`）；秒用 26sp 挂在 68sp 的分钟右侧、固定 30dp 宽，分钟数字不抖动 |
+| 时钟带秒 | 通过 | `TopBar` 每秒刷新并对齐整秒（`delay(1000 - millis)`）；整串 `HH:mm:ss` 同字号一次排版，`fontFeatureSettings="tnum"` 让数字等宽——实测 `14:09:39` → `14:09:46` 时右侧日期起点都在 x=714，版面不抖 |
 | Dock 应用名不截断 | 通过 | `DockTile` 改为 `maxLines = 2` + 按字数缩字号（≤4 字 12sp / ≤6 字 11sp / 更长 10sp），行高 1.15 倍；「超级电视账号」等长名称两行完整显示 |
 | 壁纸清晰度 | 通过 | 柔焦解码宽度 `full/4`（480）→ `full*2/3`（1280），截图对比山脊与云层纹理明显回来；设置里关掉柔焦即 100% 原图 |
 | 10 秒换图 | 通过 | `GROUP_INTERVAL_MS` 30s → 10s |
 | 设置四行布局 | 通过 | 新增「屏保」后 16 格，`PER_ROW` 5 → 4，四行等宽不出「末行落单」 |
 | 屏保注册 | 通过 | 切到「屏保·大时钟」后 `settings get secure screensaver_components` = `app.xingchuan.tv/.ScreensaverService`，`screensaver_enabled=1` |
-| 屏保画面 | **未直接看到** | 用 `input keyevent 223`（SLEEP）触发时电视连同 adb 端口一起睡掉，`screencap` 拿到 0 字节；唤醒后网络才回来。要在电视前看一眼，或把 `screen_off_timeout` 调短等它自己待机 |
+| 屏保画面 | 通过 | 把 `screen_off_timeout` 临时调到 12 秒触发 `mWakefulness=Dreaming` 后逐个截图：星空居中、壁纸幻灯左下角、极简右下角带秒、大时钟同星空同款居中布局；四套均无裁切 |
+| 屏保时钟截断（修复） | 通过 | 第一版星空只显示「14」、日期整体偏左。原因是两个 TextView 竖排在 `LinearLayout` 里、靠父容器的 `WRAP_CONTENT + gravity` 定位，这台 ROM 把宽度算错。改成单个 TextView 内 `HH:mm` + `\n` + 日期、日期用 `RelativeSizeSpan` 缩小，定位交给 TextView 自身 `gravity`，四套样式复测正常 |
 | 覆盖安装 | 通过 | `install -r` → `Success`，版本 `1.2.2`（versionCode 16） |
 
-三件实现上的事：
+三件实现上的事（外加一条布局踩坑）：
 
 1. **屏保用原生 View 而不是 Compose**。`DreamService` 没有现成的 `LifecycleOwner`，在 Android 9 上
    挂 `ComposeView` 要手工补 `ViewTreeLifecycleOwner` / `SavedStateRegistryOwner`，屏保又只是
@@ -422,6 +423,13 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
    接管时会把原来的组件记进 `screensaver_prev_component`，选「关闭」就还回去。
 3. **`settings put secure screen_off_timeout` 在这台机器上是 `2147483647`（永不待机）**，
    所以屏保不会自己出现；台面上只有两种触发方式：遥控器电源键，或临时把超时调短。
+   另外**不能用 `input keyevent 223` 测**：它会把 adb 端口一起睡掉，`screencap` 只拿到 0 字节。
+   正确做法是 `settings put system screen_off_timeout 12000` → 等 16 秒 → 截图 → 立刻改回 `600000`。
+
+**布局踩坑**：这台 ROM 上把 `WRAP_CONTENT` 的 `LinearLayout` 塞进 `FrameLayout` 再用
+`Gravity.CENTER` 定位，子项宽度会被算错——星空屏保的时钟只剩「14」、日期整体偏左。
+屏保这类「两三行字」的版式不要套容器：单个 `TextView`，行间用 `\n`，字号差用
+`RelativeSizeSpan`，定位交给 `TextView` 自己的 `gravity`，一次到位。
 
 
 ---

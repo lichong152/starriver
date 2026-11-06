@@ -70,8 +70,7 @@ fun TopBar(
         }
     }
 
-    val time = remember(now) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now.time) }
-    val seconds = remember(now) { SimpleDateFormat("ss", Locale.getDefault()).format(now.time) }
+    val time = remember(now) { SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(now.time) }
     val date = remember(now) {
         "${now.get(Calendar.MONTH) + 1}月${now.get(Calendar.DAY_OF_MONTH)}日  " +
             WEEKDAYS[now.get(Calendar.DAY_OF_WEEK) - 1]
@@ -92,18 +91,12 @@ fun TopBar(
             Row(verticalAlignment = Alignment.Bottom) {
                 Txt(
                     text = time,
-                    style = Type.Clock.copy(fontSize = (68 * s).sp, letterSpacing = 2.sp),
-                )
-                // 秒用小一号字挂在分钟右边：整串等大时会比日期宽出很多，也与参考稿的层次不符
-                Txt(
-                    text = seconds,
-                    modifier = Modifier
-                        .padding(bottom = (14 * s).dp)
-                        .width((30 * s).dp),
                     style = Type.Clock.copy(
-                        fontSize = (26 * s).sp,
-                        letterSpacing = 0.sp,
-                        color = Ink.TextDim,
+                        fontSize = (68 * s).sp,
+                        letterSpacing = 2.sp,
+                        // 冒号与秒和分钟同字号，整串一次排版；
+                        // tnum 让数字等宽，秒从 09 跳到 10 时宽度不变，右侧日期不会左右晃
+                        fontFeatureSettings = "tnum",
                     ),
                 )
                 Spacer(Modifier.width((16 * s).dp))

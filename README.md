@@ -113,10 +113,11 @@ adb shell input keyevent KEYCODE_HOME
 | 设置三行布局（v1.2.0） | 通过（15 格 5+5+5 等分，无截断，上下跨行导航正常） |
 | 过曝壁纸（v1.2.1） | 通过（原 `nature-09` 罂粟花田平均亮度 210，玻璃面板与白字被吃掉；换成林间栈桥 48，另三张压到 131~135；复测轮播多张，胶囊、卡片、Dock 轮廓均清晰） |
 | 亮度自适应遮罩（v1.2.1） | 代码已加（按画面平均亮度加深遮罩，1.5 秒过渡）；**未用纯白自选照片实测**，内置素材最高 143，属遮罩轻微加深的区间 |
-| 时钟带秒（v1.2.2） | 通过（截图确认显示为 `13:42 28`，秒按整秒对齐刷新，分钟数字不抖动） |
+| 时钟带秒（v1.2.2） | 通过（显示为 `14:09:23`，秒与分钟同字号、冒号分隔；数字等宽，秒跳变时右侧日期不移动） |
 | Dock 应用名不截断（v1.2.2） | 通过（改为最多两行 + 按字数缩字号，「超级电视账号」等长名称完整显示） |
 | 壁纸清晰度（v1.2.2） | 通过（柔焦解码宽度由 1/4 提到 2/3，山脊与云层纹理可见；10 秒换一张） |
-| 屏保注册（v1.2.2） | 通过（设置里切到「屏保·大时钟」后，`settings get secure screensaver_components` 变为 `app.xingchuan.tv/.ScreensaverService`，`screensaver_enabled=1`） |
+| 屏保注册（v1.2.2） | 通过（设置里切样式后，`settings get secure screensaver_components` 变为 `app.xingchuan.tv/.ScreensaverService`，`screensaver_enabled=1`） |
+| 屏保画面（v1.2.2） | 通过（把 `screen_off_timeout` 临时调到 12 秒触发待机，四套样式逐个截图：大时钟/星空居中、壁纸幻灯左下角、极简右下角；均无裁切） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 
 这台电视的固件（`com.stv.*`）会用**显式组件**启动自家桌面，绕过 HOME 解析，
