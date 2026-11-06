@@ -45,6 +45,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -421,8 +422,9 @@ private fun ShelfRow(apps: List<AppItem>, focusedIndex: Int, s: Float) {
                 Column(
                     Modifier
                         .fillMaxSize()
-                        .padding((15 * s).dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .padding(horizontal = (12 * s).dp, vertical = (13 * s).dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     AppIcon(
                         icon = app.icon,
@@ -430,12 +432,15 @@ private fun ShelfRow(apps: List<AppItem>, focusedIndex: Int, s: Float) {
                         size = (44 * s).dp,
                         corner = (12 * s).dp,
                     )
+                    Spacer(Modifier.height((10 * s).dp))
                     Txt(
                         text = app.label,
                         style = Type.AppLabel.copy(
                             fontSize = (16 * s).sp,
                             fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
                         ),
+                        modifier = Modifier.fillMaxWidth(),
                         color = Ink.Text,
                     )
                 }
