@@ -298,19 +298,47 @@ adb -s <TV_IP>:5555 shell "dumpsys window | grep mCurrentFocus"
 | 安装 | 通过 | `install -r` → `Success`；`pm path` 有返回 |
 | 主页键 | 通过（**依赖守护**） | 未开守护时落到 `com.stv.deskplatform`；开守护后连按 3 次均在 1.5 秒内回到 `app.xingchuan.tv` |
 | 待机唤醒 | 未测 | 需要用户按遥控器电源键，未执行 |
-| 开机 | 未测 | 需要重启，未征得同意 |
+| 开机 | 通过 | 用户重启后直接进入星川桌面，无需按任何键（BootReceiver + 守护均在） |
 
 系统偏好写入成功（`mAlways=true`），但主页键被厂商显式组件劫持，这是本机型必须开守护的原因。
+
+### 实测记录 · v1.0.1 · 2026-11-07
+
+v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四处代码修复，
+所以**重点验证混淆后的产物是否仍可运行**，其余行为沿用上表。
+
+| 验收项 | 结果 | 依据 |
+|---|---|---|
+| 覆盖安装 | 通过 | `install -r` → `Success`，版本 `1.0.1`，数据与签名沿用，无需卸载 |
+| 启动与渲染 | 通过 | 截图核对：时钟/日期、18 个真实图标、风光壁纸、Dock 满行带标签、设置面板 11 格无溢出 |
+| 组件未被混淆裁掉 | 通过 | `MainActivity` / `GuardService` / `BootReceiver` 类名在 manifest 与 dex 中均原样保留 |
+| 主页键 | 通过（**依赖守护**） | 连按 3 次，每次 `mResumedActivity` 均为 `app.xingchuan.tv/.MainActivity` |
+| 守护绑定 | 通过 | 覆盖安装后 `enabled_accessibility_services` 仍含 `GuardService`、`accessibility_enabled=1`，设置面板显示「守护·开」 |
+
+覆盖安装后前台会落回厂商桌面（`com.stv.deskplatform`），因为安装过程本身不产生窗口切换事件、
+守护不会触发；脚本会用 `am start` 拉一次，属预期行为，不是缺陷。
 
 ---
 
 ## 附：一键脚本
 
-`tools/install.sh` 把「连接 → 记录 → 安装 → 设桌面 → 验证」串起来，每一步都会打印原始输出：
+**日常更新只用这一条**（构建 + 覆盖安装 + 校验版本/前台/守护）：
+
+```sh
+TV=<电视IP> tools/update-tv.sh              # 构建并安装 standard
+TV=<电视IP> FORM=guard tools/update-tv.sh   # 装 guard 形态
+TV=<电视IP> SKIP_BUILD=1 tools/update-tv.sh # 只装现成 APK，不重新构建
+```
+
+电视离线时脚本会等 60 秒并提示先开机（「小爱同学，打开电视」或遥控器电源键），
+开机后再跑一次即可。`install -r` 保留数据，不需要卸载。
+
+首次安装用 `tools/install.sh`，它把「连接 → 记录 → 安装 → 设桌面 → 验证」串起来，
+每一步都会打印原始输出：
 
 ```sh
 TV=<电视IP> tools/install.sh            # standard
 TV=<电视IP> FORM=guard tools/install.sh # guard
 ```
 
-脚本**不会**重启、卸载、清空数据或停用原厂桌面；需要时由人按上面各节手动执行。
+两个脚本都**不会**重启、卸载、清空数据或停用原厂桌面；需要时由人按上面各节手动执行。
