@@ -11,6 +11,7 @@ import android.view.Surface
 import android.widget.Toast
 import android.view.TextureView
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,12 +58,22 @@ fun WallpaperLayer(
     soft: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    // 当前壁纸的平均亮度（0..1）。玻璃面板是白色半透明的，压在纯白壁纸上会整块消失，
+    // 所以遮罩按亮度自适应：越白压得越狠。图片和视频走真实采样，渐变走默认值。
+    var luma by remember(spec, soft) { mutableFloatStateOf(0.55f) }
+    // 换图时遮罩跟着慢慢过渡，避免亮度突变带来的一下子压暗
+    val boost by animateFloatAsState(
+        targetValue = ((luma - 0.55f) / 0.40f).coerceIn(0f, 1f),
+        animationSpec = tween(GROUP_FADE_MS),
+        label = "scrim",
+    )
+
     Box(modifier.fillMaxSize()) {
         when (spec) {
             is WallpaperSpec.Preset -> PresetWallpaper(spec.id)
-            is WallpaperSpec.Group -> GroupWallpaper(spec.id, soft)
-            is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri), soft)
-            is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri), soft)
+            is WallpaperSpec.Group -> GroupWallpaper(spec.id, soft) { luma = it }
+            is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri), soft) { luma = it }
+            is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri), soft) { luma = it }
         }
         // 统一压暗 + 上下更暗，保证任何壁纸上文字都可读；中间层保持轻薄，风光才通透
         Box(
@@ -70,14 +82,29 @@ fun WallpaperLayer(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color(0x70040A14),
-                            Color(0x38040A14),
-                            Color(0x9E040A14),
+                            Color(0x70040A14).copy(alpha = 0.44f + 0.12f * boost),
+                            Color(0x38040A14).copy(alpha = 0.22f + 0.26f * boost),
+                            Color(0x9E040A14).copy(alpha = 0.62f + 0.10f * boost),
                         )
                     )
                 )
         )
     }
+}
+
+/** 取平均亮度，给自适应遮罩用。先缩到 16×9 再算，一次几百个像素，可以忽略成本。 */
+private fun luminanceOf(bmp: Bitmap): Float {
+    val w = 16
+    val h = 9
+    val small = Bitmap.createScaledBitmap(bmp, w, h, false)
+    val px = IntArray(w * h)
+    small.getPixels(px, 0, w, 0, 0, w, h)
+    if (small !== bmp) small.recycle()
+    var sum = 0f
+    for (c in px) {
+        sum += 0.299f * ((c shr 16) and 0xFF) + 0.587f * ((c shr 8) and 0xFF) + 0.114f * (c and 0xFF)
+    }
+    return (sum / (px.size * 255f)).coerceIn(0f, 1f)
 }
 
 @Composable
@@ -108,17 +135,23 @@ private fun PresetWallpaper(id: String) {
 private enum class LoadState { Pending, Ok, Failed }
 
 @Composable
-private fun PictureWallpaper(uri: Uri, soft: Boolean) {
+private fun PictureWallpaper(uri: Uri, soft: Boolean, onLuma: (Float) -> Unit) {
     val ctx = LocalContext.current
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
     var state by remember(uri) { mutableStateOf(LoadState.Pending) }
 
     // 柔焦模式下按更小的尺寸解码，显示时再拉大，得到柔化背景（API 31 以下的 blur 是空实现）
     LaunchedEffect(uri, soft) {
-        bitmap = withContext(Dispatchers.IO) {
+        val bmp = withContext(Dispatchers.IO) {
             decodeScaled(ctx, uri, if (soft) 640 else 1920)
         }
-        state = if (bitmap == null) LoadState.Failed else LoadState.Ok
+        bitmap = bmp
+        if (bmp != null) {
+            onLuma(luminanceOf(bmp))
+            state = LoadState.Ok
+        } else {
+            state = LoadState.Failed
+        }
     }
 
     // 用户选过的图片被删掉、或授权失效时，回退到内置壁纸而不是停在一整屏黑色上
@@ -136,7 +169,7 @@ private fun PictureWallpaper(uri: Uri, soft: Boolean) {
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft)
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft, onLuma)
         else -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }
 }
@@ -176,19 +209,25 @@ private const val GROUP_FADE_MS = 1_500
 
 private object GroupFrames {
     private val cache = object : LruCache<String, ImageBitmap>(3) {}
+    /** 每张图的平均亮度，解码时顺手算好；换图时壁纸层据此调整遮罩深浅。 */
+    private val luma = HashMap<String, Float>()
 
     private fun key(name: String, w: Int) = "$name@$w"
 
     fun peek(name: String, w: Int): ImageBitmap? = cache.get(key(name, w))
 
+    fun lumaOf(name: String): Float? = luma[name]
+
     fun load(ctx: Context, name: String, targetW: Int): ImageBitmap? {
         cache.get(key(name, targetW))?.let { return it }
         val bmp = decodeAsset(ctx, name, targetW) ?: return null
-        cache.put(key(name, targetW), bmp)
-        return bmp
+        luma[name] = luminanceOf(bmp)
+        val image = bmp.asImageBitmap()
+        cache.put(key(name, targetW), image)
+        return image
     }
 
-    private fun decodeAsset(ctx: Context, name: String, targetW: Int): ImageBitmap? = try {
+    private fun decodeAsset(ctx: Context, name: String, targetW: Int): Bitmap? = try {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         ctx.assets.open("wallpapers/$name").use { BitmapFactory.decodeStream(it, null, bounds) }
         // inSampleSize 只能按 2 的幂取，各组原图宽度不同（1920 / 2560）会导致柔化程度不一致；
@@ -205,14 +244,13 @@ private object GroupFrames {
             }
         }
         ctx.assets.open("wallpapers/$name").use { BitmapFactory.decodeStream(it, null, opts) }
-            ?.asImageBitmap()
     } catch (e: Exception) {
         null
     }
 }
 
 @Composable
-private fun GroupWallpaper(prefix: String, soft: Boolean) {
+private fun GroupWallpaper(prefix: String, soft: Boolean, onLuma: (Float) -> Unit) {
     val ctx = LocalContext.current
     val files = remember(prefix) {
         runCatching {
@@ -264,6 +302,8 @@ private fun GroupWallpaper(prefix: String, soft: Boolean) {
         if (bmp == null) {
             Box(Modifier.fillMaxSize().background(Ink.Bg))
         } else {
+            // 每换一张就把亮度报给壁纸层，遮罩据此加深或放松
+            LaunchedEffect(bmp) { onLuma(GroupFrames.lumaOf(files[i]) ?: 0.55f) }
             Image(
                 bitmap = bmp,
                 contentDescription = null,
@@ -281,7 +321,7 @@ private fun GroupWallpaper(prefix: String, soft: Boolean) {
  * Surface 就绪后立刻 setSurface，播放器在 prepareAsync 回调里 start，避免时序竞争。
  */
 @Composable
-private fun VideoWallpaper(uri: Uri, soft: Boolean) {
+private fun VideoWallpaper(uri: Uri, soft: Boolean, onLuma: (Float) -> Unit) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var surfaceReady by remember(uri) { mutableStateOf(false) }
@@ -358,7 +398,7 @@ private fun VideoWallpaper(uri: Uri, soft: Boolean) {
     )
 
     when {
-        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft)
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft, onLuma)
         // 视频还没起来时先铺一层深色，不会闪白
         !surfaceReady -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }

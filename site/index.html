@@ -257,7 +257,8 @@
         <div class="no">02 — WALLPAPER</div>
         <h3>自然风光，会呼吸。</h3>
         <p>内置 40 张超清壁纸，分自然风光 / 城市夜色 / 星空银河 / 山野光影四组，<b>30 秒交叉淡入</b>，画面保持静止，像一扇缓缓变换的窗。
-          按屏幕宽度降采样加载，1080p 电视不浪费一比特内存。也可以换成你自己的图片或视频。</p>
+          按屏幕宽度降采样加载，1080p 电视不浪费一比特内存。也可以换成你自己的图片或视频。
+          壁纸层会按画面平均亮度自动加深压暗，纯白的画面也不会让玻璃面板和白色文字消失。</p>
       </div>
       <div class="card">
         <div class="no">03 — GUARD</div>
@@ -332,12 +333,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.2.0 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.2.1 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.2.0-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.2.1-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -354,10 +355,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.0</span>
-7550edf54da99f2817dcce52d2e44038b7bf0d9a4c4274e89fc39b5968a0c549  app-standard-release.apk
-<span class="cm"># guard · v1.2.0-guard</span>
-339f34c5ff436d4c1b47e80dc0098521912f15f821700c29c24bc3f39ae9ae15  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.1</span>
+eacf8b4418165827dcefd62ceeaf36a87402335b74f673668188638ac362faf5  app-standard-release.apk
+<span class="cm"># guard · v1.2.1-guard</span>
+669ebb69d1faf49eb71e4fcc717f658cd019f8794a064829b54e3ed5060585a2  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -519,6 +520,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
       <tr><td><b>待机唤醒</b></td><td class="pass">通过</td><td>遥控器电源键待机约 5 秒再唤醒；<code>mResumedActivity</code> 与 <code>mCurrentFocus</code> 都是 <code>app.xingchuan.tv/.MainActivity</code>，没落回厂商桌面（2026-11-07）</td></tr>
       <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>15 格设置不溢出；抽屉 18 项五向键可达</td></tr>
+      <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
   </div>
@@ -579,7 +581,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.2.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.2.1 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
