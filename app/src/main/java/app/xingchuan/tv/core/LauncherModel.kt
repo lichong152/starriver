@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import app.xingchuan.tv.ScreenSaverStyle
 
 /**
  * 壁纸来源。四种形态：内置渐变、内置分组轮播、本地图片、本地视频。
@@ -145,6 +146,10 @@ class LauncherModel(private val ctx: Context) {
     var softBackdrop by mutableStateOf(sp.getBoolean(KEY_SOFT, true))
         private set
 
+    /** 待机屏保样式（四套 + 关闭）。真实的系统屏保组件由 ScreenSaver.applyToSystem 写入。 */
+    var saverStyle by mutableStateOf(ScreenSaverStyle.byKey(sp.getString(KEY_SAVER, null)))
+        private set
+
     /** 界面状态 */
     var drawerOpen by mutableStateOf(false)
     var settingsOpen by mutableStateOf(false)
@@ -216,6 +221,11 @@ class LauncherModel(private val ctx: Context) {
     fun changeSoftBackdrop(on: Boolean) {
         softBackdrop = on
         sp.edit().putBoolean(KEY_SOFT, on).apply()
+    }
+
+    fun changeSaver(style: ScreenSaverStyle) {
+        saverStyle = style
+        sp.edit().putString(KEY_SAVER, style.key).apply()
     }
 
     /** @return false 表示 Dock 已满、没加进去（调用方要给反馈，不能静默失败） */
@@ -294,5 +304,6 @@ class LauncherModel(private val ctx: Context) {
         const val KEY_USAGE = "usage"
         const val KEY_WALLPAPER = "wallpaper"
         const val KEY_SOFT = "soft_backdrop"
+        const val KEY_SAVER = "screensaver_style"
     }
 }

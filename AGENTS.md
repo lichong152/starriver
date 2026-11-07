@@ -396,6 +396,34 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 最高从 (0.44/0.22/0.62) 提到 (0.56/0.48/0.72)。渐变壁纸不采样，用默认值。
 
 
+### 实测记录 · v1.2.2 · 2026-11-07
+
+用户提了四件事：Dock 应用名显示不全、时钟要带秒、壁纸太糊且要 10 秒一换、加几套待机屏保。
+
+| 验收项 | 结果 | 依据 |
+|---|---|---|
+| 时钟带秒 | 通过 | `TopBar` 每秒刷新并对齐整秒（`delay(1000 - millis)`）；秒用 26sp 挂在 68sp 的分钟右侧、固定 30dp 宽，分钟数字不抖动 |
+| Dock 应用名不截断 | 通过 | `DockTile` 改为 `maxLines = 2` + 按字数缩字号（≤4 字 12sp / ≤6 字 11sp / 更长 10sp），行高 1.15 倍；「超级电视账号」等长名称两行完整显示 |
+| 壁纸清晰度 | 通过 | 柔焦解码宽度 `full/4`（480）→ `full*2/3`（1280），截图对比山脊与云层纹理明显回来；设置里关掉柔焦即 100% 原图 |
+| 10 秒换图 | 通过 | `GROUP_INTERVAL_MS` 30s → 10s |
+| 设置四行布局 | 通过 | 新增「屏保」后 16 格，`PER_ROW` 5 → 4，四行等宽不出「末行落单」 |
+| 屏保注册 | 通过 | 切到「屏保·大时钟」后 `settings get secure screensaver_components` = `app.xingchuan.tv/.ScreensaverService`，`screensaver_enabled=1` |
+| 屏保画面 | **未直接看到** | 用 `input keyevent 223`（SLEEP）触发时电视连同 adb 端口一起睡掉，`screencap` 拿到 0 字节；唤醒后网络才回来。要在电视前看一眼，或把 `screen_off_timeout` 调短等它自己待机 |
+| 覆盖安装 | 通过 | `install -r` → `Success`，版本 `1.2.2`（versionCode 16） |
+
+三件实现上的事：
+
+1. **屏保用原生 View 而不是 Compose**。`DreamService` 没有现成的 `LifecycleOwner`，在 Android 9 上
+   挂 `ComposeView` 要手工补 `ViewTreeLifecycleOwner` / `SavedStateRegistryOwner`，屏保又只是
+   「一块会动的画」，原生 View + 每秒改一次 TextView 更稳。
+2. **写系统屏保要 `WRITE_SECURE_SETTINGS`**，侧载后必须
+   `adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS`。
+   没授权时样式仍会存在本地（`starriver.xml` 的 `screensaver_style`），但按确认会 Toast 提示去授权。
+   接管时会把原来的组件记进 `screensaver_prev_component`，选「关闭」就还回去。
+3. **`settings put secure screen_off_timeout` 在这台机器上是 `2147483647`（永不待机）**，
+   所以屏保不会自己出现；台面上只有两种触发方式：遥控器电源键，或临时把超时调短。
+
+
 ---
 
 ## 附：一键脚本

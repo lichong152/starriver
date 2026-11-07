@@ -44,16 +44,17 @@ sealed interface SettingItem {
     data object PickVideo : SettingItem
     data object GuardToggle : SettingItem
     data object SoftFocus : SettingItem
+    data object Saver : SettingItem
     data object Unhide : SettingItem
     data object Reset : SettingItem
 }
 
 object SettingsItems {
     /**
-     * 15 格，按三行排，每行 5 个——15 正好整除，三行等宽不会出现「末行只剩一个」。
-     * 顺序即导航顺序，第 6 格是第二行第一格。
+     * 16 格，按四行排，每行 4 个——16 正好整除，四行等宽不会出现「末行只剩一个」。
+     * 顺序即导航顺序，第 5 格是第二行第一格。
      */
-    const val PER_ROW = 5
+    const val PER_ROW = 4
 
     val all: List<SettingItem> =
         WallpaperGroups.all.map { SettingItem.GroupWall(it) } +
@@ -62,6 +63,7 @@ object SettingsItems {
                 SettingItem.PickVideo,
                 SettingItem.GuardToggle,
                 SettingItem.SoftFocus,
+                SettingItem.Saver,
                 SettingItem.Unhide,
                 SettingItem.Reset,
             ) +
@@ -131,6 +133,7 @@ fun SettingsOverlay(
     s: Float,
 ) {
     val softOn = model.softBackdrop
+    val saver = model.saverStyle
     Box(
         Modifier
             .fillMaxSize()
@@ -185,6 +188,7 @@ fun SettingsOverlay(
                                 },
                                 guardOn = guardOn,
                                 softOn = softOn,
+                                saver = saver,
                                 hiddenCount = model.hidden.size,
                                 s = s,
                             )
@@ -193,7 +197,7 @@ fun SettingsOverlay(
                 }
                 Spacer(Modifier.height((18 * s).dp))
                 Txt(
-                    text = "壁纸即时生效。四组内置轮播各 10 张，每 30 秒换一张；「柔焦」让背景像隔着毛玻璃，关掉则显示锐利原图；「守护·开」需在系统无障碍里勾选星川桌面守护。",
+                    text = "壁纸即时生效。四组内置轮播各 10 张，每 10 秒换一张；「柔焦」让背景像隔着毛玻璃，关掉则显示锐利原图；「屏保」切换待机画面（关闭即交还系统原屏保）；「守护·开」需在系统无障碍里勾选星川桌面守护。",
                     style = Type.Hint.copy(fontSize = (12 * s).sp),
                     maxLines = 2,
                 )
@@ -211,6 +215,7 @@ private fun SettingTile(
     hiddenCount: Int,
     guardOn: Boolean,
     softOn: Boolean,
+    saver: app.xingchuan.tv.ScreenSaverStyle,
     s: Float,
 ) {
     val shape = RoundedCornerShape((18 * s).dp)
@@ -225,6 +230,8 @@ private fun SettingTile(
                     selected -> Ink.Accent.copy(alpha = 0.7f)
                     item is SettingItem.GuardToggle && guardOn -> Ink.Accent.copy(alpha = 0.7f)
                     item is SettingItem.SoftFocus && softOn -> Ink.Accent.copy(alpha = 0.7f)
+                    item is SettingItem.Saver && saver != app.xingchuan.tv.ScreenSaverStyle.Off ->
+                        Ink.Accent.copy(alpha = 0.7f)
                     else -> Ink.GlassStroke
                 },
                 shape = shape,
@@ -256,6 +263,11 @@ private fun SettingTile(
                     SettingItem.PickVideo -> "影" to "选择视频"
                     SettingItem.GuardToggle -> "守" to if (guardOn) "守护·开" else "守护·关"
                     SettingItem.SoftFocus -> "柔" to if (softOn) "柔焦·开" else "柔焦·关"
+                    SettingItem.Saver -> "屏" to if (saver == app.xingchuan.tv.ScreenSaverStyle.Off) {
+                        "屏保·关"
+                    } else {
+                        "屏保·${saver.label}"
+                    }
                     SettingItem.Unhide -> "隐" to "恢复隐藏"
                     SettingItem.Reset -> "复" to "恢复默认"
                     is SettingItem.Preset -> "" to ""
@@ -273,7 +285,8 @@ private fun SettingTile(
                         style = Type.AppLabel.copy(fontSize = (18 * s).sp),
                         color = if (focused ||
                             (item is SettingItem.GuardToggle && guardOn) ||
-                            (item is SettingItem.SoftFocus && softOn)
+                            (item is SettingItem.SoftFocus && softOn) ||
+                            (item is SettingItem.Saver && saver != app.xingchuan.tv.ScreenSaverStyle.Off)
                         ) {
                             Ink.Accent
                         } else {

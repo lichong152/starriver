@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import app.xingchuan.tv.ScreenSaver
+import app.xingchuan.tv.ScreenSaverStyle
 import app.xingchuan.tv.core.AppItem
 import app.xingchuan.tv.core.Apps
 import app.xingchuan.tv.core.Guard
@@ -186,6 +188,17 @@ fun HomeScreen(model: LauncherModel) {
                 }
                 SettingItem.Unhide -> model.unhideAll()
                 SettingItem.SoftFocus -> model.changeSoftBackdrop(!model.softBackdrop)
+                SettingItem.Saver -> {
+                    val next = model.saverStyle.next()
+                    model.changeSaver(next)
+                    val ok = ScreenSaver.applyToSystem(ctx)
+                    val msg = when {
+                        !ok -> "屏保需要授权：adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS"
+                        next == ScreenSaverStyle.Off -> "屏保已交还系统"
+                        else -> "屏保 · ${next.label}（无操作 10 分钟后出现）"
+                    }
+                    Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                }
                 SettingItem.Reset -> model.restoreDefaults()
             }
         }
@@ -595,15 +608,28 @@ private fun DockTile(
                 shape = RoundedCornerShape((18 * s).dp),
             )
             .focusScale(focused, to = 1.08f)
-            .padding(vertical = (8 * s).dp),
+            .padding(vertical = (6 * s).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         icon()
-        Spacer(Modifier.height((6 * s).dp))
+        Spacer(Modifier.height((4 * s).dp))
+        // 应用名允许折两行并按字数缩字号：电视上应用名普遍偏长（「超级电视账号」「银河奇异果 TV」），
+        // 单行省略会变成「超级电视…」，用户看不出是哪个应用
+        val nameSize = when {
+            label.length <= 4 -> 12f
+            label.length <= 6 -> 11f
+            else -> 10f
+        }
         Txt(
             text = label,
-            style = Type.AppLabel.copy(fontSize = (12 * s).sp),
+            modifier = Modifier.fillMaxWidth(),
+            style = Type.AppLabel.copy(
+                fontSize = (nameSize * s).sp,
+                lineHeight = (nameSize * 1.15f * s).sp,
+                textAlign = TextAlign.Center,
+            ),
             color = if (focused) Ink.Text else Color(0xFFD6E0F2),
+            maxLines = 2,
         )
     }
 }

@@ -256,7 +256,7 @@
       <div class="card">
         <div class="no">02 — WALLPAPER</div>
         <h3>自然风光，会呼吸。</h3>
-        <p>内置 40 张超清壁纸，分自然风光 / 城市夜色 / 星空银河 / 山野光影四组，<b>30 秒交叉淡入</b>，画面保持静止，像一扇缓缓变换的窗。
+        <p>内置 40 张超清壁纸，分自然风光 / 城市夜色 / 星空银河 / 山野光影四组，<b>10 秒交叉淡入</b>，画面保持静止，像一扇缓缓变换的窗。
           按屏幕宽度降采样加载，1080p 电视不浪费一比特内存。也可以换成你自己的图片或视频。
           壁纸层会按画面平均亮度自动加深压暗，纯白的画面也不会让玻璃面板和白色文字消失。</p>
       </div>
@@ -277,7 +277,7 @@
       <div class="card">
         <div class="no">05 — TOP BAR</div>
         <h3>顶栏：问候语、大时钟、四枚胶囊。</h3>
-        <p>左上「早上好 / 晚上好」随时间变化，右侧 <b>壁纸 · 联网方式 · 设置 · 关于</b> 四枚胶囊，「壁纸」按一下切到下一组，
+        <p>左上「早上好 / 晚上好」随时间变化，大时钟<b>精确到秒</b>；右侧 <b>壁纸 · 联网方式 · 设置 · 关于</b> 四枚胶囊，「壁纸」按一下切到下一组，
           遥控器上键即可进入，左右切换、确认执行。联网方式是读本机网卡状态得出的，
           <b>不申请任何权限</b>，也不联网。</p>
       </div>
@@ -288,7 +288,14 @@
           已在 Android 9 实机验证：重启完成 → 前台即星川桌面。</p>
       </div>
       <div class="card">
-        <div class="no">07 — PRIVACY</div>
+        <div class="no">07 — SCREEN SAVER</div>
+        <h3>待机的时候，也有四张脸。</h3>
+        <p>四套屏保：<b>大时钟</b>（深色渐变 + 超大时间）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
+          <b>星空</b>（星点缓慢漂移闪烁）、<b>极简</b>（纯黑 + 角落小字）。在设置里一键切换，
+          选「关闭」就把系统原本的屏保还回去。只在被系统选中为屏保时运行，不常驻。</p>
+      </div>
+      <div class="card">
+        <div class="no">08 — PRIVACY</div>
         <h3>零联网、零账户。</h3>
         <p>桌面<b>不发起任何网络请求</b>，不读取账户、不注册通知监听、不申请 WRITE_SECURE_SETTINGS。
           壁纸全部内置在 APK 里。它是一块离线的画布，不是一双在线的眼睛。</p>
@@ -314,7 +321,7 @@
       </div>
       <div class="shot">
         <img src="shots/tv-settings2.png" alt="设置面板">
-        <div class="cap"><b>设置面板</b> — 壁纸、守护、柔焦、隐藏应用恢复，15 格不溢出</div>
+        <div class="cap"><b>设置面板</b> — 壁纸、守护、柔焦、屏保、隐藏应用恢复，16 格不溢出</div>
       </div>
       <div class="shot">
         <img src="shots/tv-guard-on.png" alt="守护开启状态">
@@ -333,12 +340,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.2.1 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.2.2 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.2.1-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.2.2-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -355,10 +362,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.1</span>
-eacf8b4418165827dcefd62ceeaf36a87402335b74f673668188638ac362faf5  app-standard-release.apk
-<span class="cm"># guard · v1.2.1-guard</span>
-669ebb69d1faf49eb71e4fcc717f658cd019f8794a064829b54e3ed5060585a2  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.2</span>
+e6244efddbb0f7f511ef6b6e9eec680c3b4c302e8d4d9a7ba412ee5ec5d9df00  app-standard-release.apk
+<span class="cm"># guard · v1.2.2-guard</span>
+59e4d0d30bb10147fd6608e285ff6dcd7bb658495049297b1e10943b970de66e  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -519,7 +526,9 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>主页键</b></td><td class="pass">通过（依赖守护）</td><td>未开守护时落到 <code>com.stv.deskplatform</code>；开守护后连按 3 次均在 1.5 秒内回到星川，无来回抢焦点，logcat 无 ANR</td></tr>
       <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
       <tr><td><b>待机唤醒</b></td><td class="pass">通过</td><td>遥控器电源键待机约 5 秒再唤醒；<code>mResumedActivity</code> 与 <code>mCurrentFocus</code> 都是 <code>app.xingchuan.tv/.MainActivity</code>，没落回厂商桌面（2026-11-07）</td></tr>
-      <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>15 格设置不溢出；抽屉 18 项五向键可达</td></tr>
+      <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>16 格设置（四行）不溢出；抽屉 18 项五向键可达</td></tr>
+      <tr><td><b>时钟带秒 / Dock 两行名（v1.2.2）</b></td><td class="pass">通过</td><td>顶栏显示 <code>13:42 28</code>，秒按整秒刷新不抖；应用名最多两行并按字数缩字号，「超级电视账号」完整显示</td></tr>
+      <tr><td><b>待机屏保（v1.2.2）</b></td><td class="pass">通过</td><td>设置里切样式后 <code>screensaver_components</code> 指向 <code>app.xingchuan.tv/.ScreensaverService</code>；把待机时间调短后 <code>mWakefulness=Dreaming</code>，壁纸幻灯与星空均正常渲染</td></tr>
       <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
@@ -581,7 +590,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.2.1 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.2.2 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

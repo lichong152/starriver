@@ -12,6 +12,11 @@
     <!-- 刻意不声明 INTERNET：桌面不发起任何网络请求，壁纸全部内置，权限面越小越好 -->
     <!-- guard 形态开机自启；standard 形态系统本就会拉起桌面，属冗余声明 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 屏保：把星川屏保写成系统 screensaver_components。属系统签名级权限，
+         侧载后需 adb pm grant 授权；没授权时设置里会提示，不影响其它功能 -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="false"
@@ -63,6 +68,20 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            待机屏保。四套样式（大时钟 / 壁纸幻灯 / 星空 / 极简），样式在设置里切换。
+            只有被系统选为当前屏保时才会运行，不常驻、不联网。
+        -->
+        <service
+            android:name=".ScreensaverService"
+            android:exported="true"
+            android:label="@string/screensaver_label"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

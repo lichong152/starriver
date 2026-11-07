@@ -52,7 +52,7 @@ val TOP_SLOT_COUNT = TopSlot.entries.size
  * 胶囊是真实可操作项（信号源 / 有线网络 / 设置 / 关于），焦点落在顶栏时用左右键切换、
  * 确认键执行；不在顶栏时 [focusedIndex] 传 -1，只作为状态显示。
  *
- * 时钟状态刻意留在本组件内部：时间每 10 秒变一次，若把 now 提到 HomeScreen，
+ * 时钟状态刻意留在本组件内部：秒针每秒变一次，若把 now 提到 HomeScreen，
  * 每次跳动都会让整棵树重组（包括全屏壁纸与所有卡片）。放在这里就只重组这一块。
  */
 @Composable
@@ -65,11 +65,13 @@ fun TopBar(
     LaunchedEffect(Unit) {
         while (true) {
             now = Calendar.getInstance()
-            delay(10_000)
+            // 对齐到整秒再醒，避免每拍偏移累积导致秒数偶尔跳两个
+            delay(1000L - now.get(Calendar.MILLISECOND))
         }
     }
 
     val time = remember(now) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now.time) }
+    val seconds = remember(now) { SimpleDateFormat("ss", Locale.getDefault()).format(now.time) }
     val date = remember(now) {
         "${now.get(Calendar.MONTH) + 1}月${now.get(Calendar.DAY_OF_MONTH)}日  " +
             WEEKDAYS[now.get(Calendar.DAY_OF_WEEK) - 1]
@@ -91,6 +93,18 @@ fun TopBar(
                 Txt(
                     text = time,
                     style = Type.Clock.copy(fontSize = (68 * s).sp, letterSpacing = 2.sp),
+                )
+                // 秒用小一号字挂在分钟右边：整串等大时会比日期宽出很多，也与参考稿的层次不符
+                Txt(
+                    text = seconds,
+                    modifier = Modifier
+                        .padding(bottom = (14 * s).dp)
+                        .width((30 * s).dp),
+                    style = Type.Clock.copy(
+                        fontSize = (26 * s).sp,
+                        letterSpacing = 0.sp,
+                        color = Ink.TextDim,
+                    ),
                 )
                 Spacer(Modifier.width((16 * s).dp))
                 // 时间与日期之间一道细分隔，和参考稿一致

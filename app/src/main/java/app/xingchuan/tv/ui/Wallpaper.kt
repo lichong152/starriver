@@ -143,7 +143,7 @@ private fun PictureWallpaper(uri: Uri, soft: Boolean, onLuma: (Float) -> Unit) {
     // 柔焦模式下按更小的尺寸解码，显示时再拉大，得到柔化背景（API 31 以下的 blur 是空实现）
     LaunchedEffect(uri, soft) {
         val bmp = withContext(Dispatchers.IO) {
-            decodeScaled(ctx, uri, if (soft) 640 else 1920)
+            decodeScaled(ctx, uri, if (soft) 1280 else 1920)
         }
         bitmap = bmp
         if (bmp != null) {
@@ -204,7 +204,7 @@ private fun decodeScaled(ctx: Context, uri: Uri, targetW: Int): Bitmap? = try {
  * 配置用 RGB_565 省一半；LruCache 只留 3 张（上一张 / 当前 / 下一张），
  * 一百多兆的相册型桌面不是这里要的东西。
  */
-private const val GROUP_INTERVAL_MS = 30_000L
+private const val GROUP_INTERVAL_MS = 10_000L
 private const val GROUP_FADE_MS = 1_500
 
 private object GroupFrames {
@@ -266,10 +266,11 @@ private fun GroupWallpaper(prefix: String, soft: Boolean, onLuma: (Float) -> Uni
     }
 
     // 降采样目标跟着面板走：1080p 电视解 1920，4K 电视解 2560（再往上内存不划算）。
-    // 柔焦模式下只解 1/3 宽度，显示时放大——这是 API 31 以下唯一能真正柔化背景的做法。
+    // 柔焦模式按 2/3 宽度解码：早先是 1/4（1920 → 480），放大到全屏后细节全糊掉了，
+    // 用户反馈「清晰度太低」。2/3 仍比原图软，但纹理还看得出来。
     val decodeW = remember(soft) {
         val full = ctx.resources.displayMetrics.widthPixels.coerceIn(1280, 2560)
-        if (soft) (full / 4).coerceAtLeast(480) else full
+        if (soft) (full * 2 / 3).coerceAtLeast(960) else full
     }
 
     var index by remember(prefix) { mutableIntStateOf(0) }
