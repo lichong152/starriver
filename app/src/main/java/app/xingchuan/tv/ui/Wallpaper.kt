@@ -51,13 +51,17 @@ import kotlinx.coroutines.withContext
  * - 视频：MediaPlayer 输出到 TextureView，静音循环播放
  */
 @Composable
-fun WallpaperLayer(spec: WallpaperSpec, modifier: Modifier = Modifier) {
+fun WallpaperLayer(
+    spec: WallpaperSpec,
+    soft: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     Box(modifier.fillMaxSize()) {
         when (spec) {
             is WallpaperSpec.Preset -> PresetWallpaper(spec.id)
-            is WallpaperSpec.Group -> GroupWallpaper(spec.id)
-            is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri))
-            is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri))
+            is WallpaperSpec.Group -> GroupWallpaper(spec.id, soft)
+            is WallpaperSpec.Picture -> PictureWallpaper(Uri.parse(spec.uri), soft)
+            is WallpaperSpec.Video -> VideoWallpaper(Uri.parse(spec.uri), soft)
         }
         // 统一压暗 + 上下更暗，保证任何壁纸上文字都可读；中间层保持轻薄，风光才通透
         Box(
@@ -104,13 +108,16 @@ private fun PresetWallpaper(id: String) {
 private enum class LoadState { Pending, Ok, Failed }
 
 @Composable
-private fun PictureWallpaper(uri: Uri) {
+private fun PictureWallpaper(uri: Uri, soft: Boolean) {
     val ctx = LocalContext.current
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
     var state by remember(uri) { mutableStateOf(LoadState.Pending) }
 
-    LaunchedEffect(uri) {
-        bitmap = withContext(Dispatchers.IO) { decodeScaled(ctx, uri, 1920) }
+    // 柔焦模式下按更小的尺寸解码，显示时再拉大，得到柔化背景（API 31 以下的 blur 是空实现）
+    LaunchedEffect(uri, soft) {
+        bitmap = withContext(Dispatchers.IO) {
+            decodeScaled(ctx, uri, if (soft) 640 else 1920)
+        }
         state = if (bitmap == null) LoadState.Failed else LoadState.Ok
     }
 
@@ -129,7 +136,7 @@ private fun PictureWallpaper(uri: Uri) {
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId)
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft)
         else -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }
 }
@@ -139,9 +146,14 @@ private fun decodeScaled(ctx: Context, uri: Uri, targetW: Int): Bitmap? = try {
     ctx.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
     var sample = 1
     while (bounds.outWidth / (sample * 2) >= targetW) sample *= 2
+    val decodedW = bounds.outWidth / sample
     val opts = BitmapFactory.Options().apply {
         inSampleSize = sample
         inPreferredConfig = Bitmap.Config.RGB_565
+        if (decodedW > targetW && targetW > 0) {
+            inDensity = decodedW
+            inTargetDensity = targetW
+        }
     }
     ctx.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
 } catch (e: Exception) {
@@ -165,23 +177,32 @@ private const val GROUP_FADE_MS = 1_500
 private object GroupFrames {
     private val cache = object : LruCache<String, ImageBitmap>(3) {}
 
-    fun peek(name: String): ImageBitmap? = cache.get(name)
+    private fun key(name: String, w: Int) = "$name@$w"
+
+    fun peek(name: String, w: Int): ImageBitmap? = cache.get(key(name, w))
 
     fun load(ctx: Context, name: String, targetW: Int): ImageBitmap? {
-        cache.get(name)?.let { return it }
+        cache.get(key(name, targetW))?.let { return it }
         val bmp = decodeAsset(ctx, name, targetW) ?: return null
-        cache.put(name, bmp)
+        cache.put(key(name, targetW), bmp)
         return bmp
     }
 
     private fun decodeAsset(ctx: Context, name: String, targetW: Int): ImageBitmap? = try {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         ctx.assets.open("wallpapers/$name").use { BitmapFactory.decodeStream(it, null, bounds) }
+        // inSampleSize 只能按 2 的幂取，各组原图宽度不同（1920 / 2560）会导致柔化程度不一致；
+        // 先用 sample 粗降，再用 inDensity 精确缩到 targetW，保证四组观感统一
         var sample = 1
         while (bounds.outWidth / (sample * 2) >= targetW) sample *= 2
+        val decodedW = bounds.outWidth / sample
         val opts = BitmapFactory.Options().apply {
             inSampleSize = sample
             inPreferredConfig = Bitmap.Config.RGB_565
+            if (decodedW > targetW && targetW > 0) {
+                inDensity = decodedW
+                inTargetDensity = targetW
+            }
         }
         ctx.assets.open("wallpapers/$name").use { BitmapFactory.decodeStream(it, null, opts) }
             ?.asImageBitmap()
@@ -191,7 +212,7 @@ private object GroupFrames {
 }
 
 @Composable
-private fun GroupWallpaper(prefix: String) {
+private fun GroupWallpaper(prefix: String, soft: Boolean) {
     val ctx = LocalContext.current
     val files = remember(prefix) {
         runCatching {
@@ -206,19 +227,21 @@ private fun GroupWallpaper(prefix: String) {
         return
     }
 
-    // 降采样目标跟着面板走：1080p 电视解 1920，4K 电视解 2560（再往上内存不划算）
-    val targetW = remember {
-        ctx.resources.displayMetrics.widthPixels.coerceIn(1280, 2560)
+    // 降采样目标跟着面板走：1080p 电视解 1920，4K 电视解 2560（再往上内存不划算）。
+    // 柔焦模式下只解 1/3 宽度，显示时放大——这是 API 31 以下唯一能真正柔化背景的做法。
+    val decodeW = remember(soft) {
+        val full = ctx.resources.displayMetrics.widthPixels.coerceIn(1280, 2560)
+        if (soft) (full / 4).coerceAtLeast(480) else full
     }
 
     var index by remember(prefix) { mutableIntStateOf(0) }
     // 首批解码完成前先铺底色，避免首帧闪白
-    var ready by remember(prefix) { mutableIntStateOf(0) }
+    var ready by remember(prefix, decodeW) { mutableIntStateOf(0) }
 
-    LaunchedEffect(files) {
+    LaunchedEffect(files, decodeW) {
         withContext(Dispatchers.IO) {
-            GroupFrames.load(ctx, files[0], targetW)
-            if (files.size > 1) GroupFrames.load(ctx, files[1], targetW)
+            GroupFrames.load(ctx, files[0], decodeW)
+            if (files.size > 1) GroupFrames.load(ctx, files[1], decodeW)
         }
         ready = 1
         while (true) {
@@ -227,7 +250,7 @@ private fun GroupWallpaper(prefix: String) {
             index = next
             // 展示新的一张的同时，把再下一张解好，轮到它时不用等 IO
             withContext(Dispatchers.IO) {
-                GroupFrames.load(ctx, files[(next + 1) % files.size], targetW)
+                GroupFrames.load(ctx, files[(next + 1) % files.size], decodeW)
             }
         }
     }
@@ -237,7 +260,7 @@ private fun GroupWallpaper(prefix: String) {
         animationSpec = tween(GROUP_FADE_MS),
         label = "group-$prefix",
     ) { i ->
-        val bmp = if (ready > 0) GroupFrames.peek(files[i]) else null
+        val bmp = if (ready > 0) GroupFrames.peek(files[i], decodeW) else null
         if (bmp == null) {
             Box(Modifier.fillMaxSize().background(Ink.Bg))
         } else {
@@ -258,7 +281,7 @@ private fun GroupWallpaper(prefix: String) {
  * Surface 就绪后立刻 setSurface，播放器在 prepareAsync 回调里 start，避免时序竞争。
  */
 @Composable
-private fun VideoWallpaper(uri: Uri) {
+private fun VideoWallpaper(uri: Uri, soft: Boolean) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var surfaceReady by remember(uri) { mutableStateOf(false) }
@@ -335,7 +358,7 @@ private fun VideoWallpaper(uri: Uri) {
     )
 
     when {
-        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId)
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId, soft)
         // 视频还没起来时先铺一层深色，不会闪白
         !surfaceReady -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }

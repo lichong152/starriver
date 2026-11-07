@@ -56,6 +56,7 @@ import app.xingchuan.tv.core.Apps
 import app.xingchuan.tv.core.Guard
 import app.xingchuan.tv.core.LauncherModel
 import app.xingchuan.tv.core.Shortcuts
+import app.xingchuan.tv.core.WallpaperGroups
 import app.xingchuan.tv.core.WallpaperSpec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -69,6 +70,16 @@ private const val SHELF_COUNT = 5
 
 /** 桌面上的焦点区。视频壁纸、抽屉、设置都是覆盖层，不参与这里的上下切换。 */
 private enum class Zone { Top, Shelf, Dock }
+
+/** 抽屉里对单个应用可执行的动作，顺序即菜单顺序。 */
+private enum class AppAction(val label: String) {
+    AddDock("加入 Dock"),
+    RemoveDock("从 Dock 移除"),
+    MoveLeft("向左移一位"),
+    MoveRight("向右移一位"),
+    Hide("在桌面隐藏"),
+    Cancel("取消"),
+}
 
 @Composable
 fun HomeScreen(model: LauncherModel) {
@@ -174,18 +185,24 @@ fun HomeScreen(model: LauncherModel) {
                     }
                 }
                 SettingItem.Unhide -> model.unhideAll()
+                SettingItem.SoftFocus -> model.changeSoftBackdrop(!model.softBackdrop)
                 SettingItem.Reset -> model.restoreDefaults()
             }
         }
 
         fun activateTop(i: Int) {
             when (TopSlot.entries[i]) {
-                // 输入源由系统 TvInputService 管理，第三方应用无切换权限，如实提示而不是假装能切
-                TopSlot.Source -> Toast.makeText(
-                    ctx,
-                    "输入源请按遥控器上的「信号源」键切换",
-                    Toast.LENGTH_LONG,
-                ).show()
+                // 原来这一格是「信号源」，但本机没有可被第三方调起的输入源界面（切换需系统签名），
+                // 点了只会弹提示。改成真正能用的动作：切到下一组内置壁纸。
+                TopSlot.Wallpaper -> {
+                    val ids = WallpaperGroups.all.map { it.id }
+                    val cur = (model.wallpaper as? WallpaperSpec.Group)?.id
+                    val next = WallpaperGroups.all[
+                        (ids.indexOf(cur).let { if (it < 0) 0 else it + 1 }) % ids.size
+                    ]
+                    model.changeWallpaper(WallpaperSpec.Group(next.id))
+                    Toast.makeText(ctx, "壁纸 · ${next.name}", Toast.LENGTH_SHORT).show()
+                }
                 TopSlot.Network -> if (!Shortcuts.openNetworkSettings(ctx)) {
                     Toast.makeText(ctx, "打不开网络设置", Toast.LENGTH_SHORT).show()
                 }
@@ -198,11 +215,12 @@ fun HomeScreen(model: LauncherModel) {
         }
 
         /** 抽屉里对单个应用可做的事。文案随当前状态变，用户一眼知道按了会发生什么。 */
-        fun drawerActions(app: AppItem): List<String> = listOf(
-            if (app.key in model.dock) "从 Dock 移除" else "加入 Dock",
-            "在桌面隐藏",
-            "取消",
-        )
+        fun drawerActions(app: AppItem): List<AppAction> =
+            if (app.key in model.dock) {
+                listOf(AppAction.MoveLeft, AppAction.MoveRight, AppAction.RemoveDock, AppAction.Hide, AppAction.Cancel)
+            } else {
+                listOf(AppAction.AddDock, AppAction.Hide, AppAction.Cancel)
+            }
 
         fun handleKey(e: KeyEvent): Boolean {
             if (e.type != KeyEventType.KeyDown) return false
@@ -261,15 +279,22 @@ fun HomeScreen(model: LauncherModel) {
                         actionOpen = false; true
                     }
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
-                        when (actionIndex) {
-                            0 -> if (!model.toggleDock(app)) {
+                        when (actions[actionIndex]) {
+                            AppAction.AddDock -> if (!model.toggleDock(app)) {
                                 Toast.makeText(
                                     ctx,
                                     "Dock 已满（最多 7 个），先移出一个再添加",
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             }
-                            1 -> {
+                            AppAction.RemoveDock -> model.toggleDock(app)
+                            AppAction.MoveLeft -> if (!model.moveDock(app, -1)) {
+                                Toast.makeText(ctx, "已经在最左边了", Toast.LENGTH_SHORT).show()
+                            }
+                            AppAction.MoveRight -> if (!model.moveDock(app, 1)) {
+                                Toast.makeText(ctx, "已经在最右边了", Toast.LENGTH_SHORT).show()
+                            }
+                            AppAction.Hide -> {
                                 model.hide(app)
                                 // 隐藏后该项从列表里消失，索引要收回到有效范围
                                 gridIndex = gridIndex.coerceAtMost((visible.size - 1).coerceAtLeast(0))
@@ -279,9 +304,12 @@ fun HomeScreen(model: LauncherModel) {
                                     Toast.LENGTH_SHORT,
                                 ).show()
                             }
-                            else -> Unit
+                            AppAction.Cancel -> Unit
                         }
-                        actionOpen = false
+                        // 排序类动作不关菜单，方便连续按左右挪几格
+                        val keepOpen = actions[actionIndex] == AppAction.MoveLeft ||
+                            actions[actionIndex] == AppAction.MoveRight
+                        if (!keepOpen) actionOpen = false
                         true
                     }
                     // 菜单打开时吞掉左右键，避免背后的网格跟着乱动
@@ -391,7 +419,7 @@ fun HomeScreen(model: LauncherModel) {
             }
         }
 
-        WallpaperLayer(model.wallpaper)
+        WallpaperLayer(model.wallpaper, model.softBackdrop)
 
         Column(
             Modifier
@@ -431,7 +459,7 @@ fun HomeScreen(model: LauncherModel) {
                 visible.getOrNull(gridIndex)?.let { app ->
                     DrawerActionSheet(
                         app = app,
-                        actions = drawerActions(app),
+                        actions = drawerActions(app).map { it.label },
                         focusedIndex = actionIndex,
                         s = s,
                     )

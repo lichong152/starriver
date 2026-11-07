@@ -61,7 +61,7 @@ fun AboutOverlay(guardOn: Boolean, s: Float) {
                 InfoRow("源码", "github.com/lichong152/starriver", s)
                 Spacer(Modifier.height((14 * s).dp))
                 Txt(
-                    "星川不联网、不上传任何数据；网络类型只读本机网卡状态。「信号源」需用遥控器按键，" +
+                    "星川不联网、不上传任何数据；网络类型只读本机网卡状态。顶栏「壁纸」一键切到下一组，" +
                         "因为切换输入要系统权限。",
                     Type.Hint.copy(fontSize = (12 * s).sp),
                     maxLines = 2,

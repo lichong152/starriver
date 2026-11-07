@@ -24,8 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
@@ -40,7 +40,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** 顶栏四个快捷动作，顺序即遥控器左右导航顺序。 */
-enum class TopSlot { Source, Network, Settings, About }
+enum class TopSlot { Wallpaper, Network, Settings, About }
 
 private val WEEKDAYS = arrayOf("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")
 
@@ -116,7 +116,7 @@ fun TopBar(
                 Chip(
                     slot = slot,
                     label = when (slot) {
-                        TopSlot.Source -> "信号源"
+                        TopSlot.Wallpaper -> "壁纸"
                         TopSlot.Network -> networkLabel
                         TopSlot.Settings -> "设置"
                         TopSlot.About -> "关于"
@@ -180,22 +180,27 @@ private fun Glyph(slot: TopSlot, size: Dp, color: Color) {
         val sw = w * 0.10f
         val c = Offset(w / 2f, h / 2f)
         when (slot) {
-            // 信号：底部圆点 + 三道同心弧
-            TopSlot.Source -> {
-                val base = Offset(w / 2f, h * 0.80f)
-                drawCircle(color, radius = w * 0.075f, center = base)
-                for (i in 1..3) {
-                    val r = w * 0.17f * i
-                    drawArc(
-                        color = color,
-                        startAngle = 205f,
-                        sweepAngle = 130f,
-                        useCenter = false,
-                        topLeft = Offset(base.x - r, base.y - r),
-                        size = Size(r * 2, r * 2),
-                        style = Stroke(width = sw, cap = StrokeCap.Round),
-                    )
-                }
+            // 壁纸：圆日 + 前后两座山
+            TopSlot.Wallpaper -> {
+                drawCircle(color, radius = w * 0.10f, center = Offset(w * 0.72f, h * 0.30f))
+                drawPath(
+                    Path().apply {
+                        moveTo(w * 0.08f, h * 0.80f)
+                        lineTo(w * 0.38f, h * 0.40f)
+                        lineTo(w * 0.68f, h * 0.80f)
+                        close()
+                    },
+                    color,
+                )
+                drawPath(
+                    Path().apply {
+                        moveTo(w * 0.46f, h * 0.80f)
+                        lineTo(w * 0.68f, h * 0.54f)
+                        lineTo(w * 0.94f, h * 0.80f)
+                        close()
+                    },
+                    color,
+                )
             }
             // 网络：一个中心节点连到两个子节点
             TopSlot.Network -> {

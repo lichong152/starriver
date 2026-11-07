@@ -141,6 +141,10 @@ class LauncherModel(private val ctx: Context) {
     var wallpaper by mutableStateOf(WallpaperSpec.decode(sp.getString(KEY_WALLPAPER, null)))
         private set
 
+    /** 壁纸柔焦：把图解码得更小再放大显示，得到真正的柔化背景（API 31 以下 blur 无效，只能这样）。 */
+    var softBackdrop by mutableStateOf(sp.getBoolean(KEY_SOFT, true))
+        private set
+
     /** 界面状态 */
     var drawerOpen by mutableStateOf(false)
     var settingsOpen by mutableStateOf(false)
@@ -193,7 +197,28 @@ class LauncherModel(private val ctx: Context) {
             .apply()
     }
 
-    /** @return false 表示 Dock 已满、没有加进去（调用方需要给用户反馈，不能静默失败） */
+    /**
+     * Dock 内左右移动一格（排序）。
+     * @return false 表示已经到边界，调用方给个提示
+     */
+    fun moveDock(app: AppItem, delta: Int): Boolean {
+        val i = dock.indexOf(app.key)
+        if (i < 0) return false
+        val j = i + delta
+        if (j !in dock.indices) return false
+        val next = dock.toMutableList()
+        next[i] = next[j].also { next[j] = next[i] }
+        dock = next
+        persistDock(next)
+        return true
+    }
+
+    fun changeSoftBackdrop(on: Boolean) {
+        softBackdrop = on
+        sp.edit().putBoolean(KEY_SOFT, on).apply()
+    }
+
+    /** @return false 表示 Dock 已满、没加进去（调用方要给反馈，不能静默失败） */
     fun toggleDock(app: AppItem): Boolean {
         val next = if (app.key in dock) {
             dock - app.key
@@ -268,5 +293,6 @@ class LauncherModel(private val ctx: Context) {
         const val KEY_HIDDEN = "hidden"
         const val KEY_USAGE = "usage"
         const val KEY_WALLPAPER = "wallpaper"
+        const val KEY_SOFT = "soft_backdrop"
     }
 }

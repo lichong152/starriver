@@ -43,16 +43,17 @@ sealed interface SettingItem {
     data object PickImage : SettingItem
     data object PickVideo : SettingItem
     data object GuardToggle : SettingItem
+    data object SoftFocus : SettingItem
     data object Unhide : SettingItem
     data object Reset : SettingItem
 }
 
 object SettingsItems {
     /**
-     * 14 格，按两行排：一行 7 个刚好填满 960dp 面板（7×66 + 6×8 = 510dp，留足边距）。
-     * 顺序即导航顺序，第 8 格是第二行第一格。
+     * 15 格，按三行排，每行 5 个——15 正好整除，三行等宽不会出现「末行只剩一个」。
+     * 顺序即导航顺序，第 6 格是第二行第一格。
      */
-    const val PER_ROW = 7
+    const val PER_ROW = 5
 
     val all: List<SettingItem> =
         WallpaperGroups.all.map { SettingItem.GroupWall(it) } +
@@ -60,6 +61,7 @@ object SettingsItems {
                 SettingItem.PickImage,
                 SettingItem.PickVideo,
                 SettingItem.GuardToggle,
+                SettingItem.SoftFocus,
                 SettingItem.Unhide,
                 SettingItem.Reset,
             ) +
@@ -128,6 +130,7 @@ fun SettingsOverlay(
     guardOn: Boolean,
     s: Float,
 ) {
+    val softOn = model.softBackdrop
     Box(
         Modifier
             .fillMaxSize()
@@ -181,6 +184,7 @@ fun SettingsOverlay(
                                     else -> false
                                 },
                                 guardOn = guardOn,
+                                softOn = softOn,
                                 hiddenCount = model.hidden.size,
                                 s = s,
                             )
@@ -189,7 +193,7 @@ fun SettingsOverlay(
                 }
                 Spacer(Modifier.height((18 * s).dp))
                 Txt(
-                    text = "壁纸即时生效。四组内置轮播各 10 张，每 30 秒换一张；「守护·开」需在系统无障碍里勾选星川桌面守护。",
+                    text = "壁纸即时生效。四组内置轮播各 10 张，每 30 秒换一张；「柔焦」让背景像隔着毛玻璃，关掉则显示锐利原图；「守护·开」需在系统无障碍里勾选星川桌面守护。",
                     style = Type.Hint.copy(fontSize = (12 * s).sp),
                     maxLines = 2,
                 )
@@ -206,6 +210,7 @@ private fun SettingTile(
     selected: Boolean,
     hiddenCount: Int,
     guardOn: Boolean,
+    softOn: Boolean,
     s: Float,
 ) {
     val shape = RoundedCornerShape((18 * s).dp)
@@ -219,6 +224,7 @@ private fun SettingTile(
                     focused -> Ink.GlassStrokeOn
                     selected -> Ink.Accent.copy(alpha = 0.7f)
                     item is SettingItem.GuardToggle && guardOn -> Ink.Accent.copy(alpha = 0.7f)
+                    item is SettingItem.SoftFocus && softOn -> Ink.Accent.copy(alpha = 0.7f)
                     else -> Ink.GlassStroke
                 },
                 shape = shape,
@@ -249,6 +255,7 @@ private fun SettingTile(
                     SettingItem.PickImage -> "图" to "选择图片"
                     SettingItem.PickVideo -> "影" to "选择视频"
                     SettingItem.GuardToggle -> "守" to if (guardOn) "守护·开" else "守护·关"
+                    SettingItem.SoftFocus -> "柔" to if (softOn) "柔焦·开" else "柔焦·关"
                     SettingItem.Unhide -> "隐" to "恢复隐藏"
                     SettingItem.Reset -> "复" to "恢复默认"
                     is SettingItem.Preset -> "" to ""
@@ -264,7 +271,10 @@ private fun SettingTile(
                     Txt(
                         text = glyph,
                         style = Type.AppLabel.copy(fontSize = (18 * s).sp),
-                        color = if (focused || (item is SettingItem.GuardToggle && guardOn)) {
+                        color = if (focused ||
+                            (item is SettingItem.GuardToggle && guardOn) ||
+                            (item is SettingItem.SoftFocus && softOn)
+                        ) {
                             Ink.Accent
                         } else {
                             Ink.TextDim
