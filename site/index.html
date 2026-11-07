@@ -517,7 +517,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>安装</b></td><td class="pass">通过</td><td><code>install -r</code> → Success；<code>pm path</code> 有返回；18 个应用图标全部正确显示</td></tr>
       <tr><td><b>主页键</b></td><td class="pass">通过（依赖守护）</td><td>未开守护时落到 <code>com.stv.deskplatform</code>；开守护后连按 3 次均在 1.5 秒内回到星川，无来回抢焦点，logcat 无 ANR</td></tr>
       <tr><td><b>开机自启</b></td><td class="pass">通过</td><td>重启电视后，开机完成直接进入星川桌面，无需手动按键（2026-11-03 用户实机确认）</td></tr>
-      <tr><td><b>待机唤醒</b></td><td class="untested">未测</td><td>需要用户按遥控器电源键，尚未执行（不能用 adb 发电源键，会真的关机）</td></tr>
+      <tr><td><b>待机唤醒</b></td><td class="pass">通过</td><td>遥控器电源键待机约 5 秒再唤醒；<code>mResumedActivity</code> 与 <code>mCurrentFocus</code> 都是 <code>app.xingchuan.tv/.MainActivity</code>，没落回厂商桌面（2026-11-07）</td></tr>
       <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>15 格设置不溢出；抽屉 18 项五向键可达</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
