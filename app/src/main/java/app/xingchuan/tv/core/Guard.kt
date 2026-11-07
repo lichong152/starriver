@@ -58,11 +58,13 @@ object Guard {
 class GuardService : AccessibilityService() {
 
     private var lastPullAt = 0L
-    private var homePackages: Set<String>? = null
+    private var homePackages: Set<String> = emptySet()
+    private var homeResolvedAt = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         homePackages = resolveHomePackages()
+        homeResolvedAt = SystemClock.elapsedRealtime()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -73,14 +75,28 @@ class GuardService : AccessibilityService() {
         val pkg = event.packageName?.toString() ?: return
         if (pkg == packageName || pkg == "com.android.systemui") return
 
-        val homes = homePackages ?: resolveHomePackages().also { homePackages = it }
-        if (pkg !in homes) return
+        if (pkg !in homes()) return
 
         // 原厂桌面每次刷新也会发窗口事件，节流避免来回抢焦点
         val now = SystemClock.elapsedRealtime()
         if (now - lastPullAt < 2500L) return
         lastPullAt = now
         pullToFront()
+    }
+
+    /**
+     * 「能响应 HOME 的包」集合。
+     *
+     * 缓存 60 秒而不是永久缓存：用户随时可能装/卸一个桌面类应用，
+     * 永久缓存会让守护在那种情况下漏判（新桌面不在集合里，就不会被拉回）。
+     */
+    private fun homes(): Set<String> {
+        val now = SystemClock.elapsedRealtime()
+        if (homePackages.isEmpty() || now - homeResolvedAt > 60_000L) {
+            homePackages = resolveHomePackages()
+            homeResolvedAt = now
+        }
+        return homePackages
     }
 
     override fun onInterrupt() = Unit

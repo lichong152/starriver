@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -66,7 +67,7 @@ fun AppDrawer(
                 )
                 Spacer(Modifier.weight(1f))
                 Txt(
-                    text = "菜单键 加入/移出 Dock   ·   返回键 关闭",
+                    text = "菜单键 应用操作   ·   返回键 关闭",
                     style = Type.Hint.copy(fontSize = (12 * s).sp),
                 )
             }
@@ -115,5 +116,96 @@ private fun DrawerTile(app: AppItem, focused: Boolean, s: Float) {
             style = Type.AppLabel.copy(fontSize = (14 * s).sp),
             color = if (focused) Ink.Text else Color(0xFFCBD5E8),
         )
+    }
+}
+
+
+/**
+ * 抽屉里按菜单键弹出的应用操作菜单。
+ *
+ * 之前「菜单键」直接切换 Dock，Dock 满时静默失败，而「在桌面隐藏」根本没有入口——
+ * 设置里的「恢复隐藏」于是永远显示 0。改成显式菜单后每个动作都有明确文案和反馈。
+ */
+@Composable
+fun DrawerActionSheet(
+    app: AppItem,
+    actions: List<String>,
+    focusedIndex: Int,
+    s: Float,
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0xB3050812)),
+        contentAlignment = Alignment.Center,
+    ) {
+        GlassPanel(
+            modifier = Modifier.width((380 * s).dp),
+            shape = RoundedCornerShape((24 * s).dp),
+            strong = true,
+            solid = true,
+        ) {
+            Column(Modifier.padding((22 * s).dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppIcon(
+                        icon = app.icon,
+                        fallbackText = app.label,
+                        size = (42 * s).dp,
+                        corner = (11 * s).dp,
+                    )
+                    Spacer(Modifier.width((12 * s).dp))
+                    Column {
+                        Txt(
+                            text = app.label,
+                            style = Type.AppLabel.copy(fontSize = (17 * s).sp),
+                            color = Ink.Text,
+                        )
+                        Spacer(Modifier.height((3 * s).dp))
+                        Txt(
+                            text = app.pkg,
+                            style = Type.Hint.copy(fontSize = (11 * s).sp),
+                            color = Ink.TextFaint,
+                        )
+                    }
+                }
+                Spacer(Modifier.height((16 * s).dp))
+                val shape = RoundedCornerShape((12 * s).dp)
+                actions.forEachIndexed { i, label ->
+                    val focused = i == focusedIndex
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(shape)
+                            .background(if (focused) Color(0x26FFFFFF) else Color.Transparent)
+                            .border(
+                                width = if (focused) 1.5.dp else 0.dp,
+                                color = if (focused) Ink.GlassStrokeOn else Color.Transparent,
+                                shape = shape,
+                            )
+                            .padding(horizontal = (14 * s).dp, vertical = (11 * s).dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier
+                                .width((3 * s).dp)
+                                .height((14 * s).dp)
+                                .background(if (focused) Ink.Accent else Color(0x33FFFFFF))
+                        )
+                        Spacer(Modifier.width((12 * s).dp))
+                        Txt(
+                            text = label,
+                            style = Type.AppLabel.copy(fontSize = (15 * s).sp),
+                            color = if (focused) Ink.Text else Ink.TextDim,
+                        )
+                    }
+                    if (i != actions.lastIndex) Spacer(Modifier.height((6 * s).dp))
+                }
+                Spacer(Modifier.height((12 * s).dp))
+                Txt(
+                    text = "确定键 执行   ·   返回键 取消",
+                    style = Type.Hint.copy(fontSize = (11 * s).sp),
+                )
+            }
+        }
     }
 }

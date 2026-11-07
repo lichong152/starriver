@@ -8,6 +8,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.util.LruCache
 import android.view.Surface
+import android.widget.Toast
 import android.view.TextureView
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -24,7 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -37,6 +37,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.xingchuan.tv.core.Presets
+import app.xingchuan.tv.core.WallpaperGroups
 import app.xingchuan.tv.core.WallpaperSpec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -99,25 +100,37 @@ private fun PresetWallpaper(id: String) {
     }
 }
 
+/** 壁纸解码状态。Pending 只是还没读完，Failed 才是真的读不出来——后者需要回退，不能停在黑屏上。 */
+private enum class LoadState { Pending, Ok, Failed }
+
 @Composable
 private fun PictureWallpaper(uri: Uri) {
     val ctx = LocalContext.current
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
+    var state by remember(uri) { mutableStateOf(LoadState.Pending) }
 
     LaunchedEffect(uri) {
         bitmap = withContext(Dispatchers.IO) { decodeScaled(ctx, uri, 1920) }
+        state = if (bitmap == null) LoadState.Failed else LoadState.Ok
+    }
+
+    // 用户选过的图片被删掉、或授权失效时，回退到内置壁纸而不是停在一整屏黑色上
+    LaunchedEffect(state) {
+        if (state == LoadState.Failed) {
+            Toast.makeText(ctx, "这张图片读不到了，已换回内置壁纸", Toast.LENGTH_LONG).show()
+        }
     }
 
     val bmp = bitmap
-    if (bmp != null) {
-        Image(
+    when {
+        bmp != null -> Image(
             bitmap = bmp.asImageBitmap(),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize().blur(18.dp),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-    } else {
-        Box(Modifier.fillMaxSize().background(Ink.Bg))
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId)
+        else -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }
 }
 
@@ -231,10 +244,7 @@ private fun GroupWallpaper(prefix: String) {
             Image(
                 bitmap = bmp,
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 6dp：留住风景的层次，又不至于让玻璃面板显脏
-                    .blur(6.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
         }
@@ -252,7 +262,15 @@ private fun VideoWallpaper(uri: Uri) {
     val ctx = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var surfaceReady by remember(uri) { mutableStateOf(false) }
+    var state by remember(uri) { mutableStateOf(LoadState.Pending) }
     val player = remember(uri) { MediaPlayer() }
+
+    // 视频损坏 / 编码不支持时回退到内置壁纸，避免桌面停在一整屏黑色
+    LaunchedEffect(state) {
+        if (state == LoadState.Failed) {
+            Toast.makeText(ctx, "这段视频播放不了，已换回内置壁纸", Toast.LENGTH_LONG).show()
+        }
+    }
 
     DisposableEffect(uri, lifecycleOwner) {
         // 部分固件在后台会暂停渲染，回前台后重新 start；未 prepare 完成时 start 会抛异常，吞掉即可
@@ -287,10 +305,20 @@ private fun VideoWallpaper(uri: Uri) {
                             player.isLooping = true
                             player.setVolume(0f, 0f)
                             player.setDataSource(ctx, uri)
-                            player.setOnPreparedListener { it.start() }
+                            player.setOnPreparedListener {
+                                state = LoadState.Ok
+                                it.start()
+                            }
+                            player.setOnErrorListener { _, _, _ ->
+                                state = LoadState.Failed
+                                true
+                            }
                             player.prepareAsync()
                             surfaceReady = true
-                        }.onFailure { surfaceReady = false }
+                        }.onFailure {
+                            surfaceReady = false
+                            state = LoadState.Failed
+                        }
                     }
 
                     override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {}
@@ -306,8 +334,9 @@ private fun VideoWallpaper(uri: Uri) {
         },
     )
 
-    if (!surfaceReady) {
-        // 视频没起来时先铺一层深色，不会闪白
-        Box(Modifier.fillMaxSize().background(Ink.Bg))
+    when {
+        state == LoadState.Failed -> GroupWallpaper(WallpaperGroups.DefaultId)
+        // 视频还没起来时先铺一层深色，不会闪白
+        !surfaceReady -> Box(Modifier.fillMaxSize().background(Ink.Bg))
     }
 }

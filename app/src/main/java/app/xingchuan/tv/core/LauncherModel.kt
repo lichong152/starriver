@@ -193,15 +193,17 @@ class LauncherModel(private val ctx: Context) {
             .apply()
     }
 
-    fun toggleDock(app: AppItem) {
+    /** @return false 表示 Dock 已满、没有加进去（调用方需要给用户反馈，不能静默失败） */
+    fun toggleDock(app: AppItem): Boolean {
         val next = if (app.key in dock) {
             dock - app.key
         } else {
-            if (dock.size >= MAX_DOCK) return // 已满，先移出一个再加
+            if (dock.size >= MAX_DOCK) return false
             dock + app.key
         }
         dock = next
         persistDock(next)
+        return true
     }
 
     fun hide(app: AppItem) {

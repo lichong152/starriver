@@ -270,7 +270,8 @@
         <div class="no">04 — DOCK</div>
         <h3>玻璃 Dock + 推荐位 + 全部应用。</h3>
         <p>底部 Dock 均分 <b>7 个常用应用 + 全部应用入口</b>；推荐位 5 个，按真实启动频次排序——
-          是你自己用出来的顺序，不是运营编辑挑的。应用抽屉网格排布，遥控器五向键全程可达。</p>
+          是你自己用出来的顺序，不是运营编辑挑的。应用抽屉网格排布，遥控器五向键全程可达；
+          菜单键对单个应用弹出操作菜单——加入 Dock、在桌面隐藏，把用不上的预装应用收起来。</p>
       </div>
       <div class="card">
         <div class="no">05 — TOP BAR</div>
@@ -331,12 +332,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.1.0 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.1.2 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.1.0-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.1.2-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -353,10 +354,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.1.0</span>
-8ee7f99a7c85e389dc62e0192f460f3582eaf3772ec4892cf17fbcb539890688  app-standard-release.apk
-<span class="cm"># guard · v1.1.0-guard</span>
-9ace74526a9aaf874d762833a1b69d1d37532a20ef57f7ab0077cb209fdd13e8  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.1.2</span>
+397c8c41d4c89ef32c2af932fa9b1b070bba54dbe03f1ba96e66a9323a940998  app-standard-release.apk
+<span class="cm"># guard · v1.1.2-guard</span>
+efb2bb0d0bdc0c591cea349b0bf0ef1b3b0398ae8a62d27a5cfbd9ff70925793  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -578,7 +579,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.1.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.1.2 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

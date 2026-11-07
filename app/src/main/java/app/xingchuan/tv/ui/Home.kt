@@ -57,10 +57,9 @@ import app.xingchuan.tv.core.Guard
 import app.xingchuan.tv.core.LauncherModel
 import app.xingchuan.tv.core.Shortcuts
 import app.xingchuan.tv.core.WallpaperSpec
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import kotlinx.coroutines.withContext
 
 /**
  * 推荐位数量。960dp 宽的电视上，左右留白 56dp 后可用 848dp：
@@ -86,12 +85,17 @@ fun HomeScreen(model: LauncherModel) {
     // 顶栏胶囊：焦点索引（不在顶栏时不使用）
     var topIndex by remember { mutableStateOf(0) }
     var aboutOpen by remember { mutableStateOf(false) }
-    // 联网方式（有线网络 / 无线网络 / 未连接），只读网卡状态，不发请求
+    // 抽屉里的单应用操作菜单（加入/移出 Dock、隐藏）
+    var actionOpen by remember { mutableStateOf(false) }
+    var actionIndex by remember { mutableStateOf(0) }
+    // 联网方式（有线网络 / 无线网络 / 未连接），只读网卡状态，不发请求。
+    // 初值在主线程取一次（两次小文件读），之后的轮询全部走 IO，且只在前台时进行。
     var netLabel by remember { mutableStateOf(Shortcuts.networkLabel()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            netLabel = Shortcuts.networkLabel()
-            delay(15_000)
+    var resumed by remember { mutableStateOf(true) }
+    LaunchedEffect(resumed) {
+        while (resumed) {
+            netLabel = withContext(Dispatchers.IO) { Shortcuts.networkLabel() }
+            delay(20_000)
         }
     }
 
@@ -104,24 +108,24 @@ fun HomeScreen(model: LauncherModel) {
     val visible = model.visibleApps
     val dockSlots = dockApps.size + 1 // 末位是「全部应用」入口
 
-    // 时钟：每 10 秒刷新一次，够用且不浪费重组
-    var now by remember { mutableStateOf(Calendar.getInstance()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            now = Calendar.getInstance()
-            delay(10_000)
-        }
-    }
+    // 时钟交给 TopBar 自己维护，这里不再持有 now，避免每 10 秒重组整棵树
 
     // 从其它应用返回时重新夺回焦点，否则遥控器事件会落到窗口外的空处
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                model.drawerOpen = false
-                model.settingsOpen = false
-                // 用户可能刚在系统设置里勾掉/勾上无障碍服务，回来时同步一次
-                guardOn = Guard.enabled(ctx)
-                runCatching { root.requestFocus() }
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    resumed = true
+                    model.drawerOpen = false
+                    model.settingsOpen = false
+                    aboutOpen = false
+                    // 用户可能刚在系统设置里勾掉/勾上无障碍服务，回来时同步一次
+                    guardOn = Guard.enabled(ctx)
+                    runCatching { root.requestFocus() }
+                }
+                // 进入后台就停掉网络轮询，不让桌面在别的应用前面空转
+                Lifecycle.Event.ON_PAUSE -> resumed = false
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -193,12 +197,20 @@ fun HomeScreen(model: LauncherModel) {
             }
         }
 
+        /** 抽屉里对单个应用可做的事。文案随当前状态变，用户一眼知道按了会发生什么。 */
+        fun drawerActions(app: AppItem): List<String> = listOf(
+            if (app.key in model.dock) "从 Dock 移除" else "加入 Dock",
+            "在桌面隐藏",
+            "取消",
+        )
+
         fun handleKey(e: KeyEvent): Boolean {
             if (e.type != KeyEventType.KeyDown) return false
 
-            // 关于面板：任意键关闭
+            // 关于面板：任意键关闭。忽略长按产生的重复事件，
+            // 否则按住确认键打开时会立刻被自己的重复键关掉。
             if (aboutOpen) {
-                aboutOpen = false
+                if (e.nativeKeyEvent.repeatCount == 0) aboutOpen = false
                 return true
             }
 
@@ -230,6 +242,53 @@ fun HomeScreen(model: LauncherModel) {
                 }
             }
 
+            // 抽屉里应用的操作菜单：上下选、确认执行、返回取消
+            if (model.drawerOpen && actionOpen) {
+                val app = visible.getOrNull(gridIndex)
+                if (app == null) {
+                    actionOpen = false
+                    return true
+                }
+                val actions = drawerActions(app)
+                return when (e.key) {
+                    Key.DirectionUp -> {
+                        actionIndex = (actionIndex - 1).coerceAtLeast(0); true
+                    }
+                    Key.DirectionDown -> {
+                        actionIndex = (actionIndex + 1).coerceAtMost(actions.lastIndex); true
+                    }
+                    Key.Back, Key.Menu -> {
+                        actionOpen = false; true
+                    }
+                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
+                        when (actionIndex) {
+                            0 -> if (!model.toggleDock(app)) {
+                                Toast.makeText(
+                                    ctx,
+                                    "Dock 已满（最多 7 个），先移出一个再添加",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            1 -> {
+                                model.hide(app)
+                                // 隐藏后该项从列表里消失，索引要收回到有效范围
+                                gridIndex = gridIndex.coerceAtMost((visible.size - 1).coerceAtLeast(0))
+                                Toast.makeText(
+                                    ctx,
+                                    "已隐藏「${app.label}」，在设置 → 恢复隐藏里可取回",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            else -> Unit
+                        }
+                        actionOpen = false
+                        true
+                    }
+                    // 菜单打开时吞掉左右键，避免背后的网格跟着乱动
+                    else -> true
+                }
+            }
+
             // 抽屉：网格导航
             if (model.drawerOpen) {
                 val n = visible.size
@@ -238,7 +297,11 @@ fun HomeScreen(model: LauncherModel) {
                         model.drawerOpen = false; true
                     }
                     Key.Menu -> {
-                        visible.getOrNull(gridIndex)?.let { model.toggleDock(it) }; true
+                        if (visible.isNotEmpty()) {
+                            actionOpen = true
+                            actionIndex = 0
+                        }
+                        true
                     }
                     Key.DirectionLeft -> {
                         if (gridIndex % cols != 0) gridIndex--; true
@@ -299,6 +362,7 @@ fun HomeScreen(model: LauncherModel) {
                         Zone.Shelf -> zone = Zone.Dock
                         Zone.Dock -> {
                             model.drawerOpen = true
+                            actionOpen = false
                             gridIndex = 0
                         }
                     }
@@ -309,6 +373,7 @@ fun HomeScreen(model: LauncherModel) {
                         Zone.Top -> activateTop(topIndex)
                         Zone.Dock -> if (dockIndex < dockApps.size) open(dockApps[dockIndex]) else {
                             model.drawerOpen = true
+                            actionOpen = false
                             gridIndex = 0
                         }
                         Zone.Shelf -> shelfApps.getOrNull(shelfIndex)?.let { open(it) }
@@ -334,7 +399,6 @@ fun HomeScreen(model: LauncherModel) {
                 .padding(horizontal = (56 * s).dp, vertical = (36 * s).dp),
         ) {
             TopBar(
-                now = now,
                 s = s,
                 focusedIndex = if (zone == Zone.Top) topIndex else -1,
                 networkLabel = netLabel,
@@ -363,6 +427,16 @@ fun HomeScreen(model: LauncherModel) {
                 cols = cols,
                 s = s,
             )
+            if (actionOpen) {
+                visible.getOrNull(gridIndex)?.let { app ->
+                    DrawerActionSheet(
+                        app = app,
+                        actions = drawerActions(app),
+                        focusedIndex = actionIndex,
+                        s = s,
+                    )
+                }
+            }
         }
 
         if (model.settingsOpen) {

@@ -15,7 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -46,14 +51,24 @@ val TOP_SLOT_COUNT = TopSlot.entries.size
  *
  * 胶囊是真实可操作项（信号源 / 有线网络 / 设置 / 关于），焦点落在顶栏时用左右键切换、
  * 确认键执行；不在顶栏时 [focusedIndex] 传 -1，只作为状态显示。
+ *
+ * 时钟状态刻意留在本组件内部：时间每 10 秒变一次，若把 now 提到 HomeScreen，
+ * 每次跳动都会让整棵树重组（包括全屏壁纸与所有卡片）。放在这里就只重组这一块。
  */
 @Composable
 fun TopBar(
-    now: Calendar,
     s: Float,
     focusedIndex: Int,
     networkLabel: String,
 ) {
+    var now by remember { mutableStateOf(Calendar.getInstance()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = Calendar.getInstance()
+            delay(10_000)
+        }
+    }
+
     val time = remember(now) { SimpleDateFormat("HH:mm", Locale.getDefault()).format(now.time) }
     val date = remember(now) {
         "${now.get(Calendar.MONTH) + 1}月${now.get(Calendar.DAY_OF_MONTH)}日  " +

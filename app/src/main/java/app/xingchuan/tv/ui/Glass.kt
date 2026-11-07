@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.dp
 /**
  * 玻璃面板：竖直双色渐变的半透明白 + 细描边。
  *
- * 真正的背景模糊（backdrop blur）在 Compose 里没有系统支持，所以这里的效果靠
- * “壁纸本身已经过模糊” + 面板半透明叠加来实现，视觉上等价，且在各档 SoC 上都不掉帧。
+ * 真正的背景模糊（backdrop blur）在 Compose 里没有系统支持，所以效果靠
+ * 面板半透明叠加 + 壁纸上的压暗渐变来实现。
+ *
+ * 注意：`Modifier.blur` 在 API 31 以下（含本机 Android 9）是空实现，
+ * 别指望它给面板做磨砂底——那只是看起来像，实际什么都没画。
  */
 @Composable
 fun GlassPanel(
