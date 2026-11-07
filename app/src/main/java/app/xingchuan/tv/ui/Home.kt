@@ -53,6 +53,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import app.xingchuan.tv.ScreenSaver
 import app.xingchuan.tv.ScreenSaverStyle
+import app.xingchuan.tv.WebScreenActivity
 import app.xingchuan.tv.core.AppItem
 import app.xingchuan.tv.core.Apps
 import app.xingchuan.tv.core.Guard
@@ -195,6 +196,7 @@ fun HomeScreen(model: LauncherModel) {
                     val msg = when {
                         !ok -> "屏保需要授权：adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS"
                         next == ScreenSaverStyle.Off -> "屏保已交还系统"
+                        next == ScreenSaverStyle.Web -> "屏保 · 家居大屏（联网自动连接，无操作 10 分钟后出现）"
                         else -> "屏保 · ${next.label}（无操作 10 分钟后出现）"
                     }
                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
@@ -219,6 +221,8 @@ fun HomeScreen(model: LauncherModel) {
                 TopSlot.Network -> if (!Shortcuts.openNetworkSettings(ctx)) {
                     Toast.makeText(ctx, "打不开网络设置", Toast.LENGTH_SHORT).show()
                 }
+                // 大屏页同时是大屏屏保的登录入口：先在这里登录一次，待机就省掉登录框
+                TopSlot.DashBoard -> WebScreenActivity.open(ctx)
                 TopSlot.Settings -> {
                     model.settingsOpen = true
                     settingIndex = 0

@@ -19,6 +19,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -41,6 +42,7 @@ enum class ScreenSaverStyle(val key: String, val label: String, val hint: String
     Wallpaper("wall", "壁纸幻灯", "内置壁纸轮播 + 时间"),
     Stars("stars", "星空", "缓慢漂移的星点"),
     Minimal("minimal", "极简", "纯黑背景，角落小字"),
+    Web("web", "家居大屏", "联网显示智能家居总览"),
     Off("off", "关闭", "交还系统原有屏保"),
     ;
 
@@ -54,6 +56,15 @@ enum class ScreenSaverStyle(val key: String, val label: String, val hint: String
 /** 屏保偏好与系统设置写入。写 secure settings 需要 WRITE_SECURE_SETTINGS（由 adb 授权）。 */
 object ScreenSaver {
     const val COMPONENT = "app.xingchuan.tv/.ScreensaverService"
+
+    /**
+     * 「家居大屏」屏保打开的地址（智能家居后台的 /screen 概览页）。
+     * sharecode 是发布链接的访问码，会种一个 30 天有效的 cookie；tv=1 让页面
+     * 自动换取只读会话（屏保不可交互，不能弹登录框），kiosk=1 由 DashWeb.url 追加。
+     * 分享码换过之后改这一行即可——屏保与顶栏「大屏」共用同一地址。
+     */
+    const val WEB_URL = "https://smart-home-hub-07039.app.workbuddy.host/screen?sharecode=OVUS5VJB42&tv=1"
+
     private const val SP = "starriver"
     private const val KEY_STYLE = "screensaver_style"
     private const val KEY_PREV = "screensaver_prev_component"
@@ -121,6 +132,7 @@ class ScreensaverService : DreamService() {
     private var dateRatio = 0.18f
     private var wallView: ImageView? = null
     private var starView: StarField? = null
+    private var dashWeb: WebView? = null
     private var slides: List<String> = emptyList()
     private var slideIndex = 0
 
@@ -130,7 +142,8 @@ class ScreensaverService : DreamService() {
 
     private val tick = object : Runnable {
         override fun run() {
-            clockView?.text = styled(Date())
+            // 家居大屏样式下时钟是被网页盖住的回退画面，隐藏时不必每秒重建 Spannable
+            clockView?.let { if (it.visibility == View.VISIBLE) it.text = styled(Date()) }
             handler.postDelayed(this, 1_000)
         }
     }
@@ -167,12 +180,24 @@ class ScreensaverService : DreamService() {
         super.onDreamingStopped()
         handler.removeCallbacksAndMessages(null)
         starView?.stop()
+        releaseDash()
     }
 
     override fun onDetachedFromWindow() {
         handler.removeCallbacksAndMessages(null)
         starView?.stop()
+        releaseDash()
         super.onDetachedFromWindow()
+    }
+
+    /** 大屏用的 WebView 必须显式销毁，否则屏保退出后它还在后台跑 JS、占内存。 */
+    private fun releaseDash() {
+        dashWeb?.let {
+            it.stopLoading()
+            (it.parent as? ViewGroup)?.removeView(it)
+            it.destroy()
+        }
+        dashWeb = null
     }
 
     private fun px(dp: Float): Int =
@@ -225,6 +250,52 @@ class ScreensaverService : DreamService() {
                 val c = clockText(44f, 14f, Gravity.END or Gravity.BOTTOM)
                 clockView = c
                 root.addView(c, corner(Gravity.BOTTOM or Gravity.END, 52f, 40f))
+            }
+
+            // 联网把智能家居后台的 /screen 概览铺满整屏。
+            // 断网、分享码失效、后台没开——都退到大时钟，并且每分钟自己重试一次，
+            // 网络恢复后画面会自己回来，不需要人管。
+            ScreenSaverStyle.Web -> {
+                root.setBackgroundColor(DashWeb.BG)
+
+                val fallback = clockText(96f, 18f, Gravity.CENTER).apply {
+                    visibility = View.GONE
+                }
+                clockView = fallback
+                root.addView(fallback, centered())
+
+                val why = TextView(this).apply {
+                    text = "没能连上智能家居大屏 · 正在重试"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(Color.parseColor("#8FA3C0"))
+                    gravity = Gravity.CENTER
+                    visibility = View.GONE
+                }
+                root.addView(
+                    why,
+                    FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        Gravity.BOTTOM,
+                    ).apply { bottomMargin = px(56f) },
+                )
+
+                val wv = DashWeb.create(
+                    this,
+                    kiosk = true,
+                    onFail = {
+                        fallback.visibility = View.VISIBLE
+                        why.visibility = View.VISIBLE
+                        fallback.text = styled(Date())
+                        handler.postDelayed({ dashWeb?.reload() }, RETRY_MS)
+                    },
+                    onOk = {
+                        fallback.visibility = View.GONE
+                        why.visibility = View.GONE
+                    },
+                )
+                dashWeb = wv
+                root.addView(wv, full())
             }
         }
         return root
@@ -309,6 +380,9 @@ class ScreensaverService : DreamService() {
 
     private companion object {
         const val SLIDE_MS = 20_000L
+
+        /** 大屏加载失败后多久再试一次：网络多半是临时断的，给一分钟。 */
+        const val RETRY_MS = 60_000L
     }
 }
 

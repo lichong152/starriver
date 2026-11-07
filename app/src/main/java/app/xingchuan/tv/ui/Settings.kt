@@ -193,13 +193,17 @@ fun SettingsOverlay(
                                 s = s,
                             )
                         }
+                        // 末行不满时补等宽占位，否则唯一那格会被 weight 拉满整行
+                        repeat(SettingsItems.PER_ROW - row.size) {
+                            Spacer(Modifier.weight(1f))
+                        }
                     }
                 }
                 Spacer(Modifier.height((18 * s).dp))
                 Txt(
-                    text = "壁纸即时生效。四组内置轮播各 10 张，每 10 秒换一张；「柔焦」让背景像隔着毛玻璃，关掉则显示锐利原图；「屏保」切换待机画面（关闭即交还系统原屏保）；「守护·开」需在系统无障碍里勾选星川桌面守护。",
+                    text = "壁纸即时生效。四组内置轮播各 10 张，每 10 秒换一张；「柔焦」让背景像隔着毛玻璃，关掉则显示锐利原图；「屏保」切换待机画面（关闭即交还系统原屏保）；顶栏「大屏」打开智能家居总览，选「屏保·家居大屏」后待机就显示它（自动连接，无需登录）；「守护·开」需在系统无障碍里勾选星川桌面守护。",
                     style = Type.Hint.copy(fontSize = (12 * s).sp),
-                    maxLines = 2,
+                    maxLines = 3,
                 )
             }
         }

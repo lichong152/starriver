@@ -23,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -40,7 +42,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** 顶栏四个快捷动作，顺序即遥控器左右导航顺序。 */
-enum class TopSlot { Wallpaper, Network, Settings, About }
+enum class TopSlot { Wallpaper, Network, DashBoard, Settings, About }
 
 private val WEEKDAYS = arrayOf("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")
 
@@ -116,7 +118,7 @@ fun TopBar(
         }
         Spacer(Modifier.weight(1f))
         Row(
-            horizontalArrangement = Arrangement.spacedBy((10 * s).dp),
+            horizontalArrangement = Arrangement.spacedBy((7 * s).dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TopSlot.entries.forEachIndexed { i, slot ->
@@ -125,6 +127,7 @@ fun TopBar(
                     label = when (slot) {
                         TopSlot.Wallpaper -> "壁纸"
                         TopSlot.Network -> networkLabel
+                        TopSlot.DashBoard -> "大屏"
                         TopSlot.Settings -> "设置"
                         TopSlot.About -> "关于"
                     },
@@ -158,18 +161,18 @@ private fun Chip(slot: TopSlot, label: String, focused: Boolean, s: Float) {
                 shape = shape,
             )
             .focusScale(focused, to = 1.06f)
-            .padding(horizontal = (16 * s).dp, vertical = (9 * s).dp),
+            .padding(horizontal = (11 * s).dp, vertical = (8 * s).dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Glyph(
             slot = slot,
-            size = (15 * s).dp,
+            size = (14 * s).dp,
             color = if (focused) Ink.Accent else Ink.TextFaint,
         )
-        Spacer(Modifier.width((8 * s).dp))
+        Spacer(Modifier.width((6 * s).dp))
         Txt(
             text = label,
-            style = Type.Badge.copy(fontSize = (13 * s).sp, letterSpacing = 0.4.sp),
+            style = Type.Badge.copy(fontSize = (12 * s).sp, letterSpacing = 0.3.sp),
             color = if (focused) Ink.Text else Ink.TextFaint,
         )
     }
@@ -219,6 +222,30 @@ private fun Glyph(slot: TopSlot, size: Dp, color: Color) {
                 drawCircle(color, radius = w * 0.12f, center = top)
                 drawCircle(color, radius = w * 0.12f, center = left)
                 drawCircle(color, radius = w * 0.12f, center = right)
+            }
+            // 大屏：一块 16:9 的显示面板 + 底座
+            TopSlot.DashBoard -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(w * 0.08f, h * 0.18f),
+                    size = Size(w * 0.84f, h * 0.52f),
+                    cornerRadius = CornerRadius(w * 0.08f),
+                    style = Stroke(width = sw),
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(w * 0.5f, h * 0.70f),
+                    end = Offset(w * 0.5f, h * 0.84f),
+                    strokeWidth = sw,
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(w * 0.26f, h * 0.88f),
+                    end = Offset(w * 0.74f, h * 0.88f),
+                    strokeWidth = sw,
+                    cap = StrokeCap.Round,
+                )
             }
             // 设置：圆环 + 八根短齿 + 中心轴
             TopSlot.Settings -> {

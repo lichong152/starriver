@@ -221,7 +221,7 @@
     <div class="badges">
       <span>Android 5.0+（守护功能建议 9.0+）</span>
       <span>不需要 Root</span>
-      <span>完全离线，不联网</span>
+      <span>桌面完全离线</span>
       <span>随时可回退</span>
     </div>
 
@@ -233,7 +233,7 @@
     <div class="trust">
       <span><b>真机验证</b> 开机自启 + 主页键守护</span>
       <span><b>两个形态</b> 标准版 / 守护版</span>
-      <span><b>零权限滥用</b> 不读屏幕、不读通知、不联网</span>
+      <span><b>零权限滥用</b> 不读屏幕、不读通知、不常驻联网</span>
     </div>
   </div>
 </header>
@@ -276,10 +276,10 @@
       </div>
       <div class="card">
         <div class="no">05 — TOP BAR</div>
-        <h3>顶栏：问候语、大时钟、四枚胶囊。</h3>
-        <p>左上「早上好 / 晚上好」随时间变化，大时钟<b>精确到秒</b>；右侧 <b>壁纸 · 联网方式 · 设置 · 关于</b> 四枚胶囊，「壁纸」按一下切到下一组，
+        <h3>顶栏：问候语、大时钟、五枚胶囊。</h3>
+        <p>左上「早上好 / 晚上好」随时间变化，大时钟<b>精确到秒</b>；右侧 <b>壁纸 · 联网方式 · 大屏 · 设置 · 关于</b> 五枚胶囊，「壁纸」按一下切到下一组，
           遥控器上键即可进入，左右切换、确认执行。联网方式是读本机网卡状态得出的，
-          <b>不申请任何权限</b>，也不联网。</p>
+          <b>不申请任何权限</b>，也不联网；「大屏」打开智能家居总览。</p>
       </div>
       <div class="card">
         <div class="no">06 — BOOT</div>
@@ -289,16 +289,19 @@
       </div>
       <div class="card">
         <div class="no">07 — SCREEN SAVER</div>
-        <h3>待机的时候，也有四张脸。</h3>
-        <p>四套屏保：<b>大时钟</b>（深色渐变 + 超大时间，精确到分）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
-          <b>星空</b>（星点缓慢漂移闪烁）、<b>极简</b>（纯黑 + 角落小字）。在设置里一键切换，
-          选「关闭」就把系统原本的屏保还回去。只在被系统选中为屏保时运行，不常驻。</p>
+        <h3>待机的时候，也有五张脸。</h3>
+        <p>五套屏保：<b>大时钟</b>（深色渐变 + 超大时间，精确到分）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
+          <b>星空</b>（星点缓慢漂移闪烁）、<b>极简</b>（纯黑 + 角落小字），以及 <b>家居大屏</b>——
+          把智能家居总览铺满整屏、自动更新，右上按钮自动隐藏、无需在电视上登录。
+          在设置里一键切换，选「关闭」就把系统原本的屏保还回去。只在被系统选中为屏保时运行，不常驻。</p>
       </div>
       <div class="card">
         <div class="no">08 — PRIVACY</div>
-        <h3>零联网、零账户。</h3>
-        <p>桌面<b>不发起任何网络请求</b>，不读取账户、不注册通知监听、不申请 WRITE_SECURE_SETTINGS。
-          壁纸全部内置在 APK 里。它是一块离线的画布，不是一双在线的眼睛。</p>
+        <h3>离线优先，按需联网。</h3>
+        <p>桌面本体<b>不发起任何网络请求</b>，不读取账户、不注册通知监听、不申请 WRITE_SECURE_SETTINGS，
+          壁纸全部内置在 APK 里。唯一例外是你主动选中的「家居大屏」屏保（或点顶栏「大屏」）：
+          这时 WebView 才会去访问你自己的智能家居后台；没选它就一个字节都不发。
+          连不上时自动退回大时钟，不会把错误页留在电视上。</p>
       </div>
     </div>
   </div>
@@ -329,7 +332,11 @@
       </div>
       <div class="shot">
         <img src="shots/tv-dream.png" alt="星川屏保：星空">
-        <div class="cap"><b>待机屏保·星空</b> — 四套样式可切，另有壁纸幻灯、大时钟、极简</div>
+        <div class="cap"><b>待机屏保·星空</b> — 五套样式可切，另有壁纸幻灯、大时钟、极简、家居大屏</div>
+      </div>
+      <div class="shot">
+        <img src="shots/tv-dash-dream.jpg" alt="星川屏保：家居大屏">
+        <div class="cap"><b>待机屏保·家居大屏</b> — 智能家居总览自动加载、铺满整屏，右上按钮已隐藏</div>
       </div>
     </div>
   </div>
@@ -344,12 +351,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.2.2 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.3.0 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.2.2-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.3.0-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -366,10 +373,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.2.2</span>
-285e1dc02d9d90e9a514ace76e1227de9f239b50b67c3f358832bd137b58e24d  app-standard-release.apk
-<span class="cm"># guard · v1.2.2-guard</span>
-9df00316d03e10bad5574a092af4dcb9cb7b1beb9803ab4f4e065dc746cfc026  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.3.0</span>
+ef14c0c89f244b1c8d9f532a6b17c868dae43c0b4d9e098ee6e74fcc4139e43c  app-standard-release.apk
+<span class="cm"># guard · v1.3.0-guard</span>
+57ea7eba44e776ee946a37f04be41d0135541eb5893471efccc42529900b030b  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -533,6 +540,9 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>设置面板 / 抽屉</b></td><td class="pass">通过</td><td>16 格设置（四行）不溢出；抽屉 18 项五向键可达</td></tr>
       <tr><td><b>时钟带秒 / Dock 两行名（v1.2.2）</b></td><td class="pass">通过</td><td>顶栏显示 <code>14:09:23</code>，秒与分钟同字号、冒号分隔，数字等宽所以秒跳变时日期不移动；应用名最多两行并按字数缩字号，「超级电视账号」完整显示</td></tr>
       <tr><td><b>待机屏保（v1.2.2）</b></td><td class="pass">通过</td><td>设置里切样式后 <code>screensaver_components</code> 指向 <code>app.xingchuan.tv/.ScreensaverService</code>；待机时间临时调短后 <code>mWakefulness=Dreaming</code>，四套样式逐个截图确认：大时钟与星空居中、壁纸幻灯左下角、极简右下角，均无裁切</td></tr>
+      <tr><td><b>顶栏「大屏」（v1.3.0）</b></td><td class="pass">通过</td><td>五枚胶囊全部完整显示、右边缘无裁切；确认后进入可交互大屏，页脚显示「数据更新」，<b>没有登录框</b></td></tr>
+      <tr><td><b>家居大屏屏保（v1.3.0）</b></td><td class="pass">通过</td><td>临时把待机超时调到 12 秒触发 <code>mShowingDream=true</code>；截图确认大屏铺满 1920×1080、右上全屏/关闭按钮已隐藏、KPI 与自动化数据自动加载；测完把超时改回 <code>600000</code></td></tr>
+      <tr><td><b>旧内核兼容（v1.3.0）</b></td><td class="pass">通过</td><td>系统 WebView 66.0.3359.158：页面去掉 <code>??</code> / <code>inset</code> / flex gap，舞台加 <code>flex:0 0 auto</code>；实测 CSS 视口 1280×720、<code>scale(0.666667)</code>、舞台渲染宽 1280，铺满整屏无裁切</td></tr>
       <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
     <p class="hint">「未测」就写未测。这份记录随每次实机验证更新。</p>
@@ -594,7 +604,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.2.2 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.3.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

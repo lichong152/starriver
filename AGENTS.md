@@ -431,6 +431,40 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 屏保这类「两三行字」的版式不要套容器：单个 `TextView`，行间用 `\n`，字号差用
 `RelativeSizeSpan`，定位交给 `TextView` 自己的 `gravity`，一次到位。
 
+## v1.3.0：把智能家居大屏接入屏保（2026-11-07 实测）
+
+新增 `WebDash.kt`（大屏 WebView 配置 + 可交互的 `WebScreenActivity`）、顶栏第五枚胶囊「大屏」、
+屏保第五套样式 `Web` = 家居大屏。地址统一放在 `ScreensaverService.kt` 的 `ScreenSaver.WEB_URL`：
+`https://<发布域名>/screen?sharecode=<访问码>&tv=1`，屏保再追加 `&kiosk=1` 隐藏右上按钮。
+
+**这次踩的坑，下次直接照抄**：
+
+1. **电视 WebView 是 Chromium 66**：`??`、`?.`、`inset:` 简写、flex `gap` 都不支持；
+   `??` 会让整段 `<script>` 语法错误 → 页面只剩静态骨架、数据全空且连登录框都不弹。
+   大屏页（`smart-home-backend/public/screen.html`）已全部改成等价写法：
+   `a || b`、`a ? a.b : ...`、`top/right/bottom/left`、`margin-right` 替代 flex gap。
+2. **两层缩放叠加**：页面自己用 `transform: scale()` 适配 1920×1080，
+   `WebSettings.loadWithOverviewMode` 必须关掉，否则 WebView 先缩一次、页面再缩一次，
+   画面只剩中间六成。另：`#viewport` 是 flex 容器，`#stage` 必须 `flex: 0 0 auto`，
+   否则 CSS 视口（本机 1280×720）会把 1920 宽的舞台先压扁再缩放。
+   正确结果：`iw=1280,ih=720,dpr=1.5,tf=scale(0.666667),sw=1280`。
+3. **屏保不可交互，绝不能弹登录框**：`DreamService` 里 `isInteractive=false`，
+   没法敲账号密码。大屏页用 `tv=1` 模式调后端公开的 `/api/auth/demo/wechat` 自动换只读会话，
+   API 401 时自动重换一次；浏览器正常访问仍走原来的账号密码登录。
+4. **发布链接的网关按「每个请求」校验 sharecode**：只在页面 URL 上带码不够，
+   后端 `/api/*` 的 fetch 会被 403 挡回来。`Set-Cookie: __wb_rsc=...; SameSite=None`
+   在 Chromium 66 上是未知属性，不能指望 cookie 落地 —— 页面要把 `location.search`
+   里的 sharecode 原样拼到**每个** API 请求上（`gate()`）。
+5. **403/500 不是 `onReceivedError`**：分享码失效或云端后台重启时主文档返回 4xx/5xx，
+   必须在 `onReceivedHttpError` 里兜住；而且它早于 `onPageFinished`，
+   要用一个 `httpFailed` 标记阻止后者把回退时钟收掉、把错误白页盖上去。
+6. **云端沙箱会自己重启**（`ECONNREFUSED 127.0.0.1:3000` 几十秒后恢复，重启期间设备列表会短暂为 0）。
+   屏保对此已有处理：主文档失败 → 退回大时钟 + 每 60 秒 `reload()`，恢复后自动回到大屏。
+7. **触发屏保仍用临时超时**：`settings put system screen_off_timeout 12000` → 等 17 秒 →
+   `dumpsys window` 看到 `mShowingDream=true` → 截图 → 立刻改回 `600000`。
+
+真机结论：交互页与待机屏保都能自动加载数据、无登录框、铺满 1920×1080、右上按钮已隐藏。
+未构造失效样本实测的两条低风险分支：分享码过期后跳回大时钟、云端重启期间的自动重试。
 
 ---
 

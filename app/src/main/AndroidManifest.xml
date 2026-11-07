@@ -9,7 +9,12 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <!-- 刻意不声明 INTERNET：桌面不发起任何网络请求，壁纸全部内置，权限面越小越好 -->
+    <!--
+        桌面本身不发起任何网络请求，壁纸全部内置；联网只为「家居大屏」屏保
+        （用 WebView 打开智能家居后台的 /screen 概览页）。不用这个屏保时，
+        它也不会产生任何流量。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- guard 形态开机自启；standard 形态系统本就会拉起桌面，属冗余声明 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- 屏保：把星川屏保写成系统 screensaver_components。属系统签名级权限，
@@ -70,8 +75,20 @@
         </receiver>
 
         <!--
-            待机屏保。四套样式（大时钟 / 壁纸幻灯 / 星空 / 极简），样式在设置里切换。
-            只有被系统选为当前屏保时才会运行，不常驻、不联网。
+            「家居大屏」页：可交互的 WebView，同时也是大屏屏保登录态的来源。
+            不挂 launcher 入口，从桌面设置里的「大屏」格子进入；
+            导出是为了让 adb / 其它应用也能直接唤起（只展示本机的一张网页，无数据暴露）。
+        -->
+        <activity
+            android:name=".WebScreenActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.StarRiver" />
+
+        <!--
+            待机屏保。五套样式（大时钟 / 壁纸幻灯 / 星空 / 极简 / 家居大屏），样式在设置里切换。
+            只有被系统选为当前屏保时才会运行，不常驻。
         -->
         <service
             android:name=".ScreensaverService"

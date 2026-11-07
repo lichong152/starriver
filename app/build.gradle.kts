@@ -16,8 +16,8 @@ android {
         // Android 5.0 —— 国产电视存量机型覆盖面最大的一档。
         minSdk = 21
         targetSdk = 34
-        versionCode = 16
-        versionName = "1.2.2"
+        versionCode = 17
+        versionName = "1.3.0"
     }
 
     // standard: 正常声明 HOME，作为系统桌面。
