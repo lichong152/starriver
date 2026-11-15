@@ -18,6 +18,10 @@
    **不要拿旧快照覆盖整份列表**——用户可能在此期间新装带无障碍服务的应用。
 5. **没有实际跑过的检查项，不要写成「通过」**。安装、主页键、待机唤醒、开机，四项分开报。
 6. 需要用户在电视上按键/确认时，**先提醒，再等**，不要连点、不要替用户按电源键。
+7. **卸载重装或换签名后，直接补授权，不用再问用户**：
+   `adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS`
+   屏保接管与 v1.3.3 的开机自愈都靠这个权限；漏了就会重现「重启回到原厂桌面」，
+   而且报错点很远、很难查。这条是用户明确授权的常规动作，与「重启/卸载要先问」不冲突。
 
 ---
 
@@ -96,10 +100,13 @@ adb -s <TV_IP>:5555 install -r app-standard-release.apk
   然后提醒用户在电视上打开「媒体中心 / 文件管理 → Download → xingchuan-guard.apk」安装。
 - `INSTALL_FAILED_INSUFFICIENT_STORAGE` → 请用户清理空间，不要擅自删应用。
 
-安装成功后确认：
+安装成功后立刻补授权（必须做，别的步骤可以省，这条不能省）：
 
 ```sh
+adb -s <TV_IP>:5555 shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS
 adb -s <TV_IP>:5555 shell pm path app.xingchuan.tv
+adb -s <TV_IP>:5555 shell dumpsys package app.xingchuan.tv | grep WRITE_SECURE_SETTINGS
+# 必须看到 granted=true，否则屏保接管与开机自愈都会静默失效
 ```
 
 ---
