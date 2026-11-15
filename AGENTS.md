@@ -558,6 +558,35 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 | 真开机 | 通过 | `adb reboot` 后 uptime 66 秒时 `mCurrentFocus` 已是 `app.xingchuan.tv/.MainActivity`；+60 秒复查仍是星川，`mResumedActivity` 也为星川 |
 | 开机后守护 | 通过 | 开机后 `dumpsys accessibility` 含 `Service[label=星川桌面守护]`；按一次 `KEYCODE_HOME`，前台仍是星川 |
 | 开机后屏保 | 通过（设置项） | `screensaver_components=app.xingchuan.tv/.ScreensaverService`、`screensaver_enabled=1`；实际待机画面未重拍（一进屏保 adbd 就断） |
+
+---
+
+## v1.3.4：大屏改用 home 账号（2026-11-15）
+
+**现象**：电视大屏/屏保只剩 1 台设备（容器里的 `172.24.0.1` 路由器），看着像「账号数据丢了、要重新注册、
+重新加载设备」；手机/网页用 home 登录却能看到 12 台。
+
+**根因**：`tv=1` 走的是 `/api/auth/demo/wechat`，换出来的是演示账号 `wxantv01`，它名下没有真实设备。
+home（`uf62936c340941e6e`）的数据一直在：云端 4 个账号、11 台网关设备 + 本地扫描，网关 `17046b6f0e2b` 在线。
+
+**对策**：
+1. 后端新增 `POST /api/auth/tv`，按 `config.auth.tv`（`username: home` / `key` / `days: 365`）签发长会话；
+   key 用 `timingSafeEqual` 校验，错 key 直接 401。
+2. `screen.html` 电视模式先调 `/api/auth/tv`，成功则把 `sh_tv_account` 写进 localStorage；失败才回落演示登录。
+   启动时只要 `sh_tv_account` 为空（旧演示 token）就重新换会话，避免继续用错账号。
+3. 星川 `ScreenSaver.WEB_URLS` 两条候选地址都追加 `&tvkey=<auth.tv.key>`；顶栏「大屏」共用同一份列表。
+
+**验证**（Playwright 1280×720 打开真实地址，非截屏猜）：
+
+| 项 | 本地 `192.168.0.28:8799` | 云端 `smart-home-hub-07039...` |
+|---|---|---|
+| `/api/auth/tv` | 200，username=home，expires 2027-11-14 | 200，home，365 天 |
+| `localStorage.sh_tv_account` | `home` | `home` |
+| KPI 在线设备 | 12 / 23（局域网 12 + gateway 11） | 12 / 12 |
+| 设备列表 | 米家空调、正泰智能灯、客厅窗帘…真实设备 | 同左 |
+
+**注意**：`auth.tv.key` 在 `config/config.json` 里，改 key 必须同步改 `ScreenSaver.WEB_URLS` 并重新出包；
+key 留空则接口不校验（仅建议内网）。
 | 待机屏保自动出现 | 通过 | 开机后静置 3 分钟，`mShowingDream=true`、`mCurrentFocus=Sys2023:dream`；截图确认「家居大屏」铺满 1920×1080，11/11 台在线设备、实时动态滚动。本地后台只有局域网扫描，没有电表数据，KPI 与「用电分析」为「—」——数据源边界，非渲染问题 |
 
 **踩坑**：

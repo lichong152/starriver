@@ -138,6 +138,7 @@ adb shell input keyevent KEYCODE_HOME
 | 待机时间自愈（v1.3.2） | 通过（把 `screen_off_timeout` 写成 15000 后强杀重开桌面，读回 180000） |
 | 待机屏保实拍（v1.3.3） | 通过（重启后静置约 3 分钟自动进屏保，`mShowingDream=true`；截图确认「家居大屏」铺满 1920×1080，标题「智能家居控制中心」、在线设备 11/11 台、右侧实时动态在滚动。本地后台走局域网扫描，拿不到电表数据，所以「今日用电 / 本月电费 / 账户余额」显示「—」、用电分析面板为空——是数据源边界，不是渲染缺陷） |
 | 开机自愈（v1.3.3） | 通过（模拟固件重置：删掉无障碍设置、`screensaver_enabled=0`，重开桌面后三项全部写回；随后 `adb reboot` 实测开机 66 秒后 `mCurrentFocus` 即 `app.xingchuan.tv/.MainActivity`，1 分钟后再查仍在星川，按一次主页键也未被厂商桌面抢回） |
+| 大屏账号（v1.3.4） | 通过（`tv=1&tvkey=…` 走 `/api/auth/tv` 换 home 的 365 天长会话；Playwright 打开本地与云端地址，`sh_tv_account=home`，KPI 12/23 与 12/12，设备列表是家里真实设备。改之前用的是演示账号 `wxantv01`，只有 1 台容器路由，看起来像「数据丢了要重新注册」） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 
 这台电视的固件（`com.stv.*`）会用**显式组件**启动自家桌面，绕过 HOME 解析，

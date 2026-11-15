@@ -63,12 +63,14 @@ object ScreenSaver {
      *    IP 由家里路由器 DHCP 分配，换过就改这一行；电脑没开机时自动跳过。
      * 2. 云端兜底：WorkBuddy 预览实例，跟在哪个网、电脑开不开都无关。
      *
-     * sharecode 是发布链接的访问码，tv=1 让页面自动换取只读会话（屏保不可交互，
-     * 不能弹登录框），kiosk=1 由 DashWeb 追加。
+     * sharecode 是发布链接的访问码，tv=1 让页面自动换取会话（屏保不可交互，
+     * 不能弹登录框），tvkey 是后端 config.auth.tv.key，换来的是固定账号 home 的
+     * 长会话（1 年），这样屏保看到的是自己家的 12 台设备，不是演示账号；
+     * kiosk=1 由 DashWeb 追加。
      */
     val WEB_URLS: List<String> = listOf(
-        "http://192.168.0.28:8799/screen?sharecode=OVUS5VJB42&tv=1",
-        "https://smart-home-hub-07039.app.workbuddy.host/screen?sharecode=OVUS5VJB42&tv=1",
+        "http://192.168.0.28:8799/screen?sharecode=OVUS5VJB42&tv=1&tvkey=4a7994234b34b4eb7cd1e6b6a65d1770",
+        "https://smart-home-hub-07039.app.workbuddy.host/screen?sharecode=OVUS5VJB42&tv=1&tvkey=4a7994234b34b4eb7cd1e6b6a65d1770",
     )
 
     private const val SP = "starriver"

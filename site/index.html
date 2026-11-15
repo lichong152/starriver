@@ -353,12 +353,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.3.3 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.3.4 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.3.3-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.3.4-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -375,10 +375,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.3.3</span>
-89daf74ba9fc813836caa695c73878e4eb084ee8189f608261a023d556c732ba  app-standard-release.apk
-<span class="cm"># guard · v1.3.3-guard</span>
-b411894c84ce2f36718ea084f80dc94361f8ed3a1fd667cfc23c970377aab38c  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.3.4</span>
+34e1155f3cd9a0380cc2c20261245dfc6d7222f5bb0c87c8fafe40eda116f63c  app-standard-release.apk
+<span class="cm"># guard · v1.3.4-guard</span>
+cf176672860749607283e1754776cf36302692704513446c89bfd03884f40393  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -549,6 +549,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>3 分钟待机（v1.3.1）</b></td><td class="pass">通过</td><td><code>settings get system screen_off_timeout</code> = <code>180000</code>；启用屏保时写入、选「关闭」还原原值</td></tr>
       <tr><td><b>待机时间自愈（v1.3.2）</b></td><td class="pass">通过</td><td>把待机时间写成 <code>15000</code> 后强杀重开桌面，读回 <code>180000</code></td></tr>
       <tr><td><b>开机自愈（v1.3.3）</b></td><td class="pass">通过</td><td>这台固件开机会重置 secure 设置（无障碍与屏保开关被清空）。模拟重置后重开桌面三项自动写回；随后 <code>adb reboot</code> 实测：开机 uptime 66 秒 <code>mCurrentFocus</code> 即为星川，1 分钟后复查、按主页键均仍停在星川，静置 3 分钟按预期进入「家居大屏」屏保（11/11 台在线设备）</td></tr>
+      <tr><td><b>大屏账号（v1.3.4）</b></td><td class="pass">通过</td><td>电视屏保与大屏改用 <code>home</code> 账号的长会话（<code>/api/auth/tv</code> + <code>tvkey</code>，365 天），不再用演示账号。Playwright 1280×720 打开本地与云端地址：<code>sh_tv_account=home</code>、在线设备 12/23 与 12/12、设备列表是家里真实设备（米家空调、正泰智能灯、客厅窗帘…）</td></tr>
       <tr><td><b>旧内核兼容（v1.3.0）</b></td><td class="pass">通过</td><td>系统 WebView 66.0.3359.158：页面去掉 <code>??</code> / <code>inset</code> / flex gap，舞台加 <code>flex:0 0 auto</code>；实测 CSS 视口 1280×720、<code>scale(0.666667)</code>、舞台渲染宽 1280，铺满整屏无裁切</td></tr>
       <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
@@ -611,7 +612,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.3.3 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.3.4 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·
