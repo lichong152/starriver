@@ -292,8 +292,10 @@
         <h3>待机的时候，也有五张脸。</h3>
         <p>五套屏保：<b>大时钟</b>（深色渐变 + 超大时间，精确到分）、<b>壁纸幻灯</b>（内置壁纸每 20 秒一换）、
           <b>星空</b>（星点缓慢漂移闪烁）、<b>极简</b>（纯黑 + 角落小字），以及 <b>家居大屏</b>——
-          把智能家居总览铺满整屏、自动更新，右上按钮自动隐藏、无需在电视上登录。
-          在设置里一键切换，选「关闭」就把系统原本的屏保还回去。只在被系统选中为屏保时运行，不常驻。</p>
+          把智能家居总览铺满整屏、自动更新，右上按钮自动隐藏、无需在电视上登录，
+          字号按电视观看距离放大一档。
+          数据先连<b>局域网里的本机后台</b>（真实扫描到的设备），电脑没开就自动切到云端，两路都不通退回大时钟。
+          在设置里一键切换，选「关闭」就把系统原本的屏保还回去；启用时把待机时间压到 <b>3 分钟</b>。</p>
       </div>
       <div class="card">
         <div class="no">08 — PRIVACY</div>
@@ -351,12 +353,12 @@
     <table style="margin-top:32px">
       <tr><th>形态</th><th>文件</th><th>适用</th></tr>
       <tr>
-        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.3.0 · 声明 HOME</span></td>
+        <td><b>标准版 standard</b><br><span style="font-size:12.5px">v1.3.1 · 声明 HOME</span></td>
         <td><code>app-standard-release.apk</code></td>
         <td>默认选它。大多数电视可用，能被系统设为默认桌面。</td>
       </tr>
       <tr>
-        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.3.0-guard · 不声明 HOME</span></td>
+        <td><b>守护版 guard</b><br><span style="font-size:12.5px">v1.3.1-guard · 不声明 HOME</span></td>
         <td><code>app-guard-release.apk</code></td>
         <td>固件<b>拒绝安装声明 HOME 的 APK</b> 时用（TCL/雷鸟、部分海信，以及实测中主页键被 <code>com.stv.*</code> 劫持的机型）。装上后是普通应用，靠桌面守护常驻前台。</td>
       </tr>
@@ -373,10 +375,10 @@
     <p class="hint" style="margin-top:16px">
       装之前先核对 SHA-256，确认拿到的是同一个包、没有被篡改或截断：
     </p>
-    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.3.0</span>
-ef14c0c89f244b1c8d9f532a6b17c868dae43c0b4d9e098ee6e74fcc4139e43c  app-standard-release.apk
-<span class="cm"># guard · v1.3.0-guard</span>
-57ea7eba44e776ee946a37f04be41d0135541eb5893471efccc42529900b030b  app-guard-release.apk</pre>
+    <pre style="font-size:12px"><button class="copy">复制</button><span class="cm"># standard · v1.3.1</span>
+a06ae4e7963931b1869ccad8fca7487c3ecbc6875063d6e59b6ddc53a4364801  app-standard-release.apk
+<span class="cm"># guard · v1.3.1-guard</span>
+f908b718775d0e63eec6b8e1cf245827f8400e19461dadb59539ac45640c0f32  app-guard-release.apk</pre>
     <p class="hint">
       也可以校验签名：<code>apksigner verify --print-certs app-standard-release.apk</code>。不要用来路不明的转载包。
     </p>
@@ -541,7 +543,10 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
       <tr><td><b>时钟带秒 / Dock 两行名（v1.2.2）</b></td><td class="pass">通过</td><td>顶栏显示 <code>14:09:23</code>，秒与分钟同字号、冒号分隔，数字等宽所以秒跳变时日期不移动；应用名最多两行并按字数缩字号，「超级电视账号」完整显示</td></tr>
       <tr><td><b>待机屏保（v1.2.2）</b></td><td class="pass">通过</td><td>设置里切样式后 <code>screensaver_components</code> 指向 <code>app.xingchuan.tv/.ScreensaverService</code>；待机时间临时调短后 <code>mWakefulness=Dreaming</code>，四套样式逐个截图确认：大时钟与星空居中、壁纸幻灯左下角、极简右下角，均无裁切</td></tr>
       <tr><td><b>顶栏「大屏」（v1.3.0）</b></td><td class="pass">通过</td><td>五枚胶囊全部完整显示、右边缘无裁切；确认后进入可交互大屏，页脚显示「数据更新」，<b>没有登录框</b></td></tr>
-      <tr><td><b>家居大屏屏保（v1.3.0）</b></td><td class="pass">通过</td><td>临时把待机超时调到 12 秒触发 <code>mShowingDream=true</code>；截图确认大屏铺满 1920×1080、右上全屏/关闭按钮已隐藏、KPI 与自动化数据自动加载；测完把超时改回 <code>600000</code></td></tr>
+      <tr><td><b>家居大屏屏保（v1.3.0）</b></td><td class="pass">通过</td><td>临时把待机超时调到 12 秒触发 <code>mShowingDream=true</code>；截图确认大屏铺满 1920×1080、右上全屏/关闭按钮已隐藏、KPI 与自动化数据自动加载；测完把超时改回 <code>180000</code></td></tr>
+      <tr><td><b>本地优先数据源（v1.3.1）</b></td><td class="pass">通过</td><td>加载前 1.2 秒 TCP 探测：日志 <code>probe hit: http://192.168.0.28:8799/...</code>，页面显示局域网扫描到的 10 台真实设备；停掉本机后台后自动落到云端链接，两路都不通立即回退大时钟</td></tr>
+      <tr><td><b>kiosk 视觉（v1.3.1）</b></td><td class="pass">通过</td><td><code>kiosk=1</code> 挂 <code>body.kiosk</code>：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 渲染无溢出、无裁切</td></tr>
+      <tr><td><b>3 分钟待机（v1.3.1）</b></td><td class="pass">通过</td><td><code>settings get system screen_off_timeout</code> = <code>180000</code>；启用屏保时写入、选「关闭」还原原值</td></tr>
       <tr><td><b>旧内核兼容（v1.3.0）</b></td><td class="pass">通过</td><td>系统 WebView 66.0.3359.158：页面去掉 <code>??</code> / <code>inset</code> / flex gap，舞台加 <code>flex:0 0 auto</code>；实测 CSS 视口 1280×720、<code>scale(0.666667)</code>、舞台渲染宽 1280，铺满整屏无裁切</td></tr>
       <tr><td><b>玻璃可读性（v1.2.1）</b></td><td class="pass">通过</td><td>原罂粟花田壁纸平均亮度 210，玻璃面板和白字被吃掉；换成林间栈桥并把其余高亮素材压到 131~135，全组最高 143，胶囊/卡片/Dock 轮廓清晰</td></tr>
     </table>
@@ -604,7 +609,7 @@ adb -s 192.168.1.20:5555 pull /sdcard/xingchuan-check.png .</pre>
 
 <footer>
   <div class="wrap">
-    <p>星川 Star River TV · v1.3.0 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
+    <p>星川 Star River TV · v1.3.1 · 包名 app.xingchuan.tv · Kotlin + Jetpack Compose · minSdk 21 / targetSdk 34</p>
     <p>源码与版本：<a href="https://github.com/lichong152/starriver" target="_blank" rel="noopener">github.com/lichong152/starriver</a> ·
        下载：<a href="https://github.com/lichong152/starriver/releases" target="_blank" rel="noopener">Releases</a> ·
        安装手册：<a href="https://github.com/lichong152/starriver/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a> ·

@@ -19,7 +19,6 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -58,16 +57,27 @@ object ScreenSaver {
     const val COMPONENT = "app.xingchuan.tv/.ScreensaverService"
 
     /**
-     * 「家居大屏」屏保打开的地址（智能家居后台的 /screen 概览页）。
-     * sharecode 是发布链接的访问码，会种一个 30 天有效的 cookie；tv=1 让页面
-     * 自动换取只读会话（屏保不可交互，不能弹登录框），kiosk=1 由 DashWeb.url 追加。
-     * 分享码换过之后改这一行即可——屏保与顶栏「大屏」共用同一地址。
+     * 「家居大屏」屏保的候选地址，按顺序探测，第一个连得上的就留下。
+     *
+     * 1. 局域网优先：电脑上跑的智能家居后台（数据是自己的真实设备，刷新快、不依赖外网）。
+     *    IP 由家里路由器 DHCP 分配，换过就改这一行；电脑没开机时自动跳过。
+     * 2. 云端兜底：WorkBuddy 预览实例，跟在哪个网、电脑开不开都无关。
+     *
+     * sharecode 是发布链接的访问码，tv=1 让页面自动换取只读会话（屏保不可交互，
+     * 不能弹登录框），kiosk=1 由 DashWeb 追加。
      */
-    const val WEB_URL = "https://smart-home-hub-07039.app.workbuddy.host/screen?sharecode=OVUS5VJB42&tv=1"
+    val WEB_URLS: List<String> = listOf(
+        "http://192.168.0.28:8799/screen?sharecode=OVUS5VJB42&tv=1",
+        "https://smart-home-hub-07039.app.workbuddy.host/screen?sharecode=OVUS5VJB42&tv=1",
+    )
 
     private const val SP = "starriver"
     private const val KEY_STYLE = "screensaver_style"
     private const val KEY_PREV = "screensaver_prev_component"
+    private const val KEY_PREV_TIMEOUT = "screensaver_prev_timeout"
+
+    /** 无操作多久进屏保。3 分钟：比电视默认的 10 分钟更贴近「当画看」的用法。 */
+    const val IDLE_MS = 3 * 60_000
 
     fun style(ctx: Context): ScreenSaverStyle =
         ScreenSaverStyle.byKey(ctx.getSharedPreferences(SP, Context.MODE_PRIVATE).getString(KEY_STYLE, null))
@@ -109,12 +119,24 @@ object ScreenSaver {
                 "screensaver_enabled",
                 if (style == ScreenSaverStyle.Off) 0 else 1,
             )
-            // 电视出厂常常是「永不待机」（screen_off_timeout = Integer.MAX_VALUE），
-            // 那样屏保永远不会被触发。启用屏保时顺手给个 10 分钟，关掉时不动它。
+            // 屏保靠「无操作 → 系统待机」触发，所以启用时把待机时间压到 3 分钟。
+            // 电视出厂常是「永不待机」（Integer.MAX_VALUE）或 10 分钟，不压就等不到屏保。
+            // 原值先存下来，选「关闭」时还原，不擅自改用户原来的习惯。
             if (style != ScreenSaverStyle.Off) {
-                val t = Settings.System.getInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 0)
-                if (t <= 0 || t > 30 * 60_000) {
-                    Settings.System.putInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 10 * 60_000)
+                if (sp.getInt(KEY_PREV_TIMEOUT, -1) < 0) {
+                    val t = Settings.System.getInt(
+                        ctx.contentResolver,
+                        Settings.System.SCREEN_OFF_TIMEOUT,
+                        IDLE_MS,
+                    )
+                    sp.edit().putInt(KEY_PREV_TIMEOUT, t).apply()
+                }
+                Settings.System.putInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, IDLE_MS)
+            } else {
+                val prev = sp.getInt(KEY_PREV_TIMEOUT, -1)
+                if (prev > 0) {
+                    Settings.System.putInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, prev)
+                    sp.edit().remove(KEY_PREV_TIMEOUT).apply()
                 }
             }
             true
@@ -132,7 +154,9 @@ class ScreensaverService : DreamService() {
     private var dateRatio = 0.18f
     private var wallView: ImageView? = null
     private var starView: StarField? = null
-    private var dashWeb: WebView? = null
+    private var dashWeb: DashWebView? = null
+    /** 大屏重试次数，用来决定下一次等多久（10s → 30s → 60s 封顶）。 */
+    private var dashRetry = 0
     private var slides: List<String> = emptyList()
     private var slideIndex = 0
 
@@ -190,14 +214,20 @@ class ScreensaverService : DreamService() {
         super.onDetachedFromWindow()
     }
 
-    /** 大屏用的 WebView 必须显式销毁，否则屏保退出后它还在后台跑 JS、占内存。 */
+    /**
+     * 大屏用的 WebView 必须显式销毁，否则屏保退出后它还在后台跑 JS、占内存。
+     * 先切到 about:blank 让页面卸载、停掉定时器与 WebSocket，再 destroy。
+     */
     private fun releaseDash() {
         dashWeb?.let {
             it.stopLoading()
+            it.loadUrl("about:blank")
+            it.clearHistory()
             (it.parent as? ViewGroup)?.removeView(it)
             it.destroy()
         }
         dashWeb = null
+        dashRetry = 0
     }
 
     private fun px(dp: Float): Int =
@@ -253,8 +283,9 @@ class ScreensaverService : DreamService() {
             }
 
             // 联网把智能家居后台的 /screen 概览铺满整屏。
-            // 断网、分享码失效、后台没开——都退到大时钟，并且每分钟自己重试一次，
-            // 网络恢复后画面会自己回来，不需要人管。
+            // 先探测「局域网后台 → 云端预览」，第一个通的直接加载，两边都不可达就立刻
+            // 退到大时钟——不会出现「黑屏等 20 秒超时」的空档。之后按 10s/30s/60s
+            // 退避重试，画面自己回来，不需要人管。
             ScreenSaverStyle.Web -> {
                 root.setBackgroundColor(DashWeb.BG)
 
@@ -280,22 +311,26 @@ class ScreensaverService : DreamService() {
                     ).apply { bottomMargin = px(56f) },
                 )
 
-                val wv = DashWeb.create(
+                val wv = DashWebView(
                     this,
                     kiosk = true,
                     onFail = {
                         fallback.visibility = View.VISIBLE
                         why.visibility = View.VISIBLE
                         fallback.text = styled(Date())
-                        handler.postDelayed({ dashWeb?.reload() }, RETRY_MS)
+                        val wait = RETRY_STEPS[dashRetry.coerceAtMost(RETRY_STEPS.lastIndex)]
+                        dashRetry++
+                        handler.postDelayed({ dashWeb?.load() }, wait)
                     },
                     onOk = {
+                        dashRetry = 0
                         fallback.visibility = View.GONE
                         why.visibility = View.GONE
                     },
                 )
                 dashWeb = wv
                 root.addView(wv, full())
+                wv.load()
             }
         }
         return root
@@ -381,8 +416,12 @@ class ScreensaverService : DreamService() {
     private companion object {
         const val SLIDE_MS = 20_000L
 
-        /** 大屏加载失败后多久再试一次：网络多半是临时断的，给一分钟。 */
-        const val RETRY_MS = 60_000L
+        /**
+         * 大屏首次失败后的重试节奏：10 秒、30 秒，之后每分钟一次。
+         * 断网多是瞬时抖动，快速试两次能省掉一分钟黑屏；真断网则退回慢速轮询，
+         * 免得屏保整夜每秒醒来开一次 socket 白耗电。
+         */
+        val RETRY_STEPS = longArrayOf(10_000L, 30_000L, 60_000L)
     }
 }
 

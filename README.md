@@ -36,9 +36,13 @@ standard / guard 双形态）。
 - **待机屏保**：五套样式——大时钟 / 壁纸幻灯 / 星空 / 极简 / **家居大屏**，在设置里一键切换，选「关闭」交还系统原屏保。
   只有被系统选为当前屏保时才运行，不常驻；前四套完全离线，只有「家居大屏」联网
 - **家居大屏**：顶栏第五枚胶囊「大屏」打开智能家居总览；选「屏保·家居大屏」后，待机时由 `DreamService`
-  用全屏 WebView 铺满显示同一张页面（隐藏右上按钮）。页面带 `tv=1` 自动换取只读会话，
-  **无需在电视上登录**；断网 / 分享码失效 / 后台重启时自动退回大时钟并每分钟重试。
+  用全屏 WebView 铺满显示同一张页面（隐藏右上按钮、kiosk 字号放大便于远看）。页面带 `tv=1` 自动换取
+  只读会话，**无需在电视上登录**。
+  地址是**本地优先、云端兜底**：先连局域网里电脑上的后台（`http://192.168.0.28:8799`，展示真实扫描到的设备），
+  电脑没开或换了 IP 就自动切到 WorkBuddy 云端预览链接；两路都不可达时立刻退回大时钟，并按 10s/30s/60s 退避重试。
+  加载前用 1.2 秒 TCP 探测选路，不会出现「黑屏等 20 秒超时」。
   （写入系统屏保需要一次 `adb pm grant`，见下）
+- **3 分钟进屏保**：启用星川屏保时把 `screen_off_timeout` 压到 180 秒，原值记下、选「关闭」时还原
 - **空闲省电**：不常驻后台服务、不申请多余权限，只做桌面该做的事
 - **安装即变**：装/卸应用后自动重扫，不需要重启桌面
 - **双形态**：`standard` 声明 HOME 作为系统桌面；`guard` 不声明 HOME，供 TCL / 海信等
@@ -125,7 +129,10 @@ adb shell input keyevent KEYCODE_HOME
 | 顶栏「大屏」胶囊（v1.3.0） | 通过（五枚胶囊全部完整显示、无右边缘裁切；确认后进入可交互大屏，页脚显示「数据更新」，无登录框） |
 | 网页大屏兼容旧内核（v1.3.0） | 通过（系统 WebView 66.0.3359.158：去掉 `??` / `inset` / flex gap，`#stage` 加 `flex:0 0 auto`；实测 CSS 视口 1280×720、`scale(0.666667)`，铺满 1920×1080 无裁切） |
 | 屏保免登录（v1.3.0） | 通过（`tv=1` 自动换取只读会话；预览网关按请求校验 sharecode，页面把访问码带到每个 API 请求上，不依赖旧内核保存 cookie） |
-| 家居大屏屏保（v1.3.0） | 通过（`screen_off_timeout` 临时调到 12 秒触发 `mShowingDream=true`，截图确认大屏铺满、右上全屏/关闭按钮已隐藏、数据自动加载；超时已改回 600000） |
+| 家居大屏屏保（v1.3.0） | 通过（`screen_off_timeout` 临时调到 12 秒触发 `mShowingDream=true`，截图确认大屏铺满、右上全屏/关闭按钮已隐藏、数据自动加载；超时已改回 180000） |
+| 本地优先数据源（v1.3.1） | 通过（本地后台在线时日志 `probe hit: http://192.168.0.28:8799/...`，页面显示局域网扫描到的 10 台真实设备；后台停止时自动落到 `https://smart-home-hub-...`，两路都断则立即回退大时钟） |
+| 大屏 kiosk 视觉（v1.3.1） | 通过（`kiosk=1` 挂 `body.kiosk`：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 截图无溢出、无裁切） |
+| 3 分钟待机（v1.3.1） | 通过（`settings get system screen_off_timeout` = 180000；启用屏保时写入、选「关闭」还原原值） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 
 这台电视的固件（`com.stv.*`）会用**显式组件**启动自家桌面，绕过 HOME 解析，
@@ -202,9 +209,13 @@ focusable 锚点，所有方向键在 `Home.kt` 里按 index 集中分发，网�
 - **背景柔焦**在解码阶段完成（背景图先解码到屏幕 2/3 宽再放大），不依赖 `Modifier.blur`，
   因此 Android 9 这类低版本也有柔化效果；设置里可关掉换回 100% 原图。
 - **「家居大屏」是唯一联网的功能**：桌面本体仍然零联网、零账户，壁纸全部内置；只有选中这套屏保
-  或点顶栏「大屏」时才会由 WebView 访问 `ScreenSaver.WEB_URL`（`ScreensaverService.kt` 顶部一行）。
-  发布链接靠 `sharecode` 放行（30 天 cookie），换码只要改那一行；页面 `tv=1` 会自动换取只读会话，
-  不需要在电视上敲账号密码。云端后台偶尔会重启，重启期间屏保退回大时钟并每分钟自动重试。
+  或点顶栏「大屏」时才会由 WebView 访问 `ScreenSaver.WEB_URLS`（`ScreensaverService.kt` 顶部，按顺序探测）。
+  第一条是局域网里的本机后台，第二条是云端预览；换 IP 或换分享码只改这个列表。页面 `tv=1` 会自动
+  换取只读会话，不需要在电视上敲账号密码。为连局域网后台，manifest 开了 `usesCleartextTraffic`
+  （地址是两个常量，不接收用户输入）。
+- **本机后台要常开**：局域网这路依赖电脑上的 `smart-home-backend`（端口 8799，配置写在
+  `config/config.json` 的 `server.port`）。已放一个登录自启快捷方式在
+  `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`，电脑重启登录后自动拉起。
 - **屏保要写系统设置**：把星川屏保设成当前屏保用的是 `screensaver_components`，需要
   `WRITE_SECURE_SETTINGS`。侧载安装后执行一次：
   `adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS`。

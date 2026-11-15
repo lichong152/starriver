@@ -196,8 +196,8 @@ fun HomeScreen(model: LauncherModel) {
                     val msg = when {
                         !ok -> "屏保需要授权：adb shell pm grant app.xingchuan.tv android.permission.WRITE_SECURE_SETTINGS"
                         next == ScreenSaverStyle.Off -> "屏保已交还系统"
-                        next == ScreenSaverStyle.Web -> "屏保 · 家居大屏（联网自动连接，无操作 10 分钟后出现）"
-                        else -> "屏保 · ${next.label}（无操作 10 分钟后出现）"
+                        next == ScreenSaverStyle.Web -> "屏保 · 家居大屏（联网自动连接，无操作 3 分钟后出现）"
+                        else -> "屏保 · ${next.label}（无操作 3 分钟后出现）"
                     }
                     Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
                 }

@@ -30,7 +30,13 @@
         android:label="@string/app_name"
         android:largeHeap="true"
         android:supportsRtl="false"
-        android:theme="@style/Theme.StarRiver">
+        android:theme="@style/Theme.StarRiver"
+        android:usesCleartextTraffic="true">
+        <!--
+            usesCleartextTraffic 只为「局域网后台」这一路开：家里的智能家居后台跑在
+            http://192.168.x.x:8799，没有证书。云端那路仍是 https。两个地址都是常量、
+            不接收用户输入，不存在明文劫持面扩大的问题。
+        -->
 
         <activity
             android:name=".MainActivity"
