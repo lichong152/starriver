@@ -92,6 +92,20 @@ object ScreenSaver {
     }.getOrNull()?.contains("app.xingchuan.tv") == true
 
     /**
+     * 桌面启动时的兜底：屏保开着，但系统待机时间不是 3 分钟（固件重置、别的应用改过、
+     * 调试时临时调短忘了改回来），就重新写一次。每次开机只多一次 getInt，开销可忽略。
+     */
+    fun ensureIdleTimeout(ctx: Context) {
+        if (style(ctx) == ScreenSaverStyle.Off) return
+        runCatching {
+            val now = Settings.System.getInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 0)
+            if (now != IDLE_MS) {
+                Settings.System.putInt(ctx.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, IDLE_MS)
+            }
+        }
+    }
+
+    /**
      * 把当前选中的样式写到系统 screensaver_components。
      * @return false 表示没有 WRITE_SECURE_SETTINGS，需要用户用 adb 授权
      */

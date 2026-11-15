@@ -131,8 +131,9 @@ adb shell input keyevent KEYCODE_HOME
 | 屏保免登录（v1.3.0） | 通过（`tv=1` 自动换取只读会话；预览网关按请求校验 sharecode，页面把访问码带到每个 API 请求上，不依赖旧内核保存 cookie） |
 | 家居大屏屏保（v1.3.0） | 通过（`screen_off_timeout` 临时调到 12 秒触发 `mShowingDream=true`，截图确认大屏铺满、右上全屏/关闭按钮已隐藏、数据自动加载；超时已改回 180000） |
 | 本地优先数据源（v1.3.1） | 通过（本地后台在线时日志 `probe hit: http://192.168.0.28:8799/...`，页面显示局域网扫描到的 10 台真实设备；后台停止时自动落到 `https://smart-home-hub-...`，两路都断则立即回退大时钟） |
-| 大屏 kiosk 视觉（v1.3.1） | 通过（`kiosk=1` 挂 `body.kiosk`：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 截图无溢出、无裁切） |
+| 大屏 kiosk 视觉（v1.3.1） | 通过（`kiosk=1` 挂 `body.kiosk`：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 渲染无溢出、无裁切。电视端待机实拍未重拍——取数时电视正在使用，屏保一触发 adbd 就停） |
 | 3 分钟待机（v1.3.1） | 通过（`settings get system screen_off_timeout` = 180000；启用屏保时写入、选「关闭」还原原值） |
+| 待机时间自愈（v1.3.2） | 通过（把 `screen_off_timeout` 写成 15000 后强杀重开桌面，读回 180000） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 
 这台电视的固件（`com.stv.*`）会用**显式组件**启动自家桌面，绕过 HOME 解析，

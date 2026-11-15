@@ -40,6 +40,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         model = LauncherModel(applicationContext)
+        // 屏保开着就把待机时间校正回 3 分钟，防止被固件/别的应用改掉
+        ScreenSaver.ensureIdleTimeout(applicationContext)
         setContent { HomeScreen(model) }
         reload()
     }
