@@ -136,6 +136,7 @@ adb shell input keyevent KEYCODE_HOME
 | 大屏 kiosk 视觉（v1.3.1） | 通过（`kiosk=1` 挂 `body.kiosk`：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 渲染无溢出、无裁切。电视端待机实拍未重拍——取数时电视正在使用，屏保一触发 adbd 就停） |
 | 3 分钟待机（v1.3.1） | 通过（`settings get system screen_off_timeout` = 180000；启用屏保时写入、选「关闭」还原原值） |
 | 待机时间自愈（v1.3.2） | 通过（把 `screen_off_timeout` 写成 15000 后强杀重开桌面，读回 180000） |
+| 待机屏保实拍（v1.3.3） | 通过（重启后静置约 3 分钟自动进屏保，`mShowingDream=true`；截图确认「家居大屏」铺满 1920×1080，标题「智能家居控制中心」、在线设备 11/11 台、右侧实时动态在滚动。本地后台走局域网扫描，拿不到电表数据，所以「今日用电 / 本月电费 / 账户余额」显示「—」、用电分析面板为空——是数据源边界，不是渲染缺陷） |
 | 开机自愈（v1.3.3） | 通过（模拟固件重置：删掉无障碍设置、`screensaver_enabled=0`，重开桌面后三项全部写回；随后 `adb reboot` 实测开机 66 秒后 `mCurrentFocus` 即 `app.xingchuan.tv/.MainActivity`，1 分钟后再查仍在星川，按一次主页键也未被厂商桌面抢回） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 

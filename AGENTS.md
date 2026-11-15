@@ -551,6 +551,7 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 | 真开机 | 通过 | `adb reboot` 后 uptime 66 秒时 `mCurrentFocus` 已是 `app.xingchuan.tv/.MainActivity`；+60 秒复查仍是星川，`mResumedActivity` 也为星川 |
 | 开机后守护 | 通过 | 开机后 `dumpsys accessibility` 含 `Service[label=星川桌面守护]`；按一次 `KEYCODE_HOME`，前台仍是星川 |
 | 开机后屏保 | 通过（设置项） | `screensaver_components=app.xingchuan.tv/.ScreensaverService`、`screensaver_enabled=1`；实际待机画面未重拍（一进屏保 adbd 就断） |
+| 待机屏保自动出现 | 通过 | 开机后静置 3 分钟，`mShowingDream=true`、`mCurrentFocus=Sys2023:dream`；截图确认「家居大屏」铺满 1920×1080，11/11 台在线设备、实时动态滚动。本地后台只有局域网扫描，没有电表数据，KPI 与「用电分析」为「—」——数据源边界，非渲染问题 |
 
 **踩坑**：
 
