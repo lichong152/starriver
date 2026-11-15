@@ -106,6 +106,19 @@ object ScreenSaver {
     }
 
     /**
+     * 开机自愈：这台电视的固件会在开机时把 secure 设置恢复默认，
+     * `screensaver_components` 还在，但 `screensaver_enabled` 会被打回 0（等于屏保关掉）。
+     * 样式不是「关闭」时，开机后把这两项一起写回，用户不用每次重启都去设置里点一遍。
+     */
+    fun ensureApplied(ctx: Context) {
+        if (style(ctx) == ScreenSaverStyle.Off) return
+        val enabled = runCatching {
+            Settings.Secure.getInt(ctx.contentResolver, "screensaver_enabled", 0)
+        }.getOrDefault(0) == 1
+        if (!active(ctx) || !enabled) applyToSystem(ctx)
+    }
+
+    /**
      * 把当前选中的样式写到系统 screensaver_components。
      * @return false 表示没有 WRITE_SECURE_SETTINGS，需要用户用 adb 授权
      */

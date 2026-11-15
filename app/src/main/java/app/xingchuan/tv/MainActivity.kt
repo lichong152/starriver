@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import app.xingchuan.tv.core.Apps
+import app.xingchuan.tv.core.Guard
 import app.xingchuan.tv.core.Icons
 import app.xingchuan.tv.core.LauncherModel
 import app.xingchuan.tv.ui.HomeScreen
@@ -42,6 +43,11 @@ class MainActivity : ComponentActivity() {
         model = LauncherModel(applicationContext)
         // 屏保开着就把待机时间校正回 3 分钟，防止被固件/别的应用改掉
         ScreenSaver.ensureIdleTimeout(applicationContext)
+        // 开机自愈的兜底：固件会重置 secure 设置（无障碍 / 屏保开关），
+        // 这里顺手复查一次——只要发现被清掉就写回来，不必等下一次重启。
+        Guard.noteOn(applicationContext)
+        Guard.repair(applicationContext)
+        ScreenSaver.ensureApplied(applicationContext)
         setContent { HomeScreen(model) }
         reload()
     }

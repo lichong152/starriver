@@ -49,6 +49,8 @@ standard / guard 双形态）。
   会拦截第三方 HOME 声明的固件以普通应用方式安装
 - **桌面守护（可选）**：固件把自家桌面拉回前台时，用无障碍服务立刻切回星川。
   只监听窗口切换、不读屏幕内容，默认关闭，设置面板里一键开关
+- **开机自愈**：这台固件开机会把 secure 设置恢复默认（无障碍、屏保开关都会被清），
+  开机后自动把用户开过的那几项写回去，不用每次重启都去设置里重点一遍
 
 ## 构建
 
@@ -134,6 +136,7 @@ adb shell input keyevent KEYCODE_HOME
 | 大屏 kiosk 视觉（v1.3.1） | 通过（`kiosk=1` 挂 `body.kiosk`：KPI 数值 40→52px、面板标题 15→18px、设备名 14→16.5px，KPI 行高 158→178px；1920×1080 渲染无溢出、无裁切。电视端待机实拍未重拍——取数时电视正在使用，屏保一触发 adbd 就停） |
 | 3 分钟待机（v1.3.1） | 通过（`settings get system screen_off_timeout` = 180000；启用屏保时写入、选「关闭」还原原值） |
 | 待机时间自愈（v1.3.2） | 通过（把 `screen_off_timeout` 写成 15000 后强杀重开桌面，读回 180000） |
+| 开机自愈（v1.3.3） | 通过（模拟固件重置：删掉无障碍设置、`screensaver_enabled=0`，重开桌面后三项全部写回；随后 `adb reboot` 实测开机 66 秒后 `mCurrentFocus` 即 `app.xingchuan.tv/.MainActivity`，1 分钟后再查仍在星川，按一次主页键也未被厂商桌面抢回） |
 | 待机唤醒（v1.2.0） | 通过（遥控器电源键待机后唤醒，`mResumedActivity` 与 `mCurrentFocus` 均为 `app.xingchuan.tv/.MainActivity`） |
 
 这台电视的固件（`com.stv.*`）会用**显式组件**启动自家桌面，绕过 HOME 解析，
@@ -174,7 +177,7 @@ app/src/main/java/app/xingchuan/tv/
 │   ├── Apps.kt              应用枚举（LEANBACK + LAUNCHER 去重）、图标解码、启动
 │   ├── Icons.kt             图标解码与 LruCache（入口图标 → 包图标，宽图留边）
 │   ├── Guard.kt             桌面守护：无障碍服务 + 开关状态
-│   ├── BootReceiver.kt      开机自启（guard 形态用，尽力而为）
+│   ├── BootReceiver.kt      开机自启 + 开机自愈（固件重写 secure 设置时补回）
 │   ├── Shortcuts.kt         顶栏胶囊的系统动作 + 本地联网方式判断
 │   └── LauncherModel.kt     设置持久化 + 桌面状态（Dock / 隐藏 / 频次 / 壁纸）
 ├── ui/
@@ -223,6 +226,12 @@ focusable 锚点，所有方向键在 `Home.kt` 里按 index 集中分发，网�
   没授权时设置里仍可切换样式（存本地），但按确认会提示需要授权。
 - **桌面守护已在 Android 9 实机验证三个场景**：主页键（连按 3 次均在 1.5 秒内回到星川，无闪跳）、
   开机自启（2026-11-03 重启后直达星川，无需按键）、待机唤醒（2026-11-07 电源键待机再唤醒，前台仍是星川）。
+- **这台固件开机会重置 secure 设置**（v1.3.3 实测）：`enabled_accessibility_services`、
+  `accessibility_enabled`、`screensaver_enabled` 全部被清空，而 `system` 命名空间里的
+  `screen_off_timeout` 保留。表现就是「重启后回到原厂桌面、屏保不再出现」。星川在
+  `BOOT_COMPLETED` 里用已授权的 `WRITE_SECURE_SETTINGS` 把用户开过的项目写回，
+  再主动带一次前台；守护绑上时如果还在开机两分钟内，也会补发一次 HOME（此时固件桌面
+  已经在前台，不会再产生窗口切换事件）。
 - 未实现：去广告、手机远程传壁纸、天气、「保持 ADB 常开」开关。
 - `targetSdk 34`，侧载自用，不上架。
 

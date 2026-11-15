@@ -52,7 +52,7 @@ adb -s <TV_IP>:5555 shell settings get secure enabled_notification_listeners
 | 项目 | 用途 |
 |---|---|
 | 当前 HOME 组件（通常是原厂桌面，形如 `com.xxx.tvlauncher/.MainActivity`） | 回滚时设回去；也用来判断「主页键是否被抢走」 |
-| 当前屏保 `screensaver_components` | **星川不注册屏保、不修改屏保**，记下来只是为了出问题时能证明与星川无关 |
+| 当前屏保 `screensaver_components` | 回滚用。v1.2.2 起星川会注册自己的屏保，接管前把原值记进偏好 `screensaver_prev_component`；用户选「屏保·关闭」就还回去 |
 | 当前无障碍服务列表 `enabled_accessibility_services` | 开启守护要往这份列表里**追加**一项，不能覆盖 |
 | 当前通知监听 `enabled_notification_listeners` | 星川不注册通知监听，记下来同理 |
 
@@ -170,6 +170,17 @@ adb -s <TV_IP>:5555 pull /sdcard/xingchuan-check.png xingchuan-check.png
 `getprop sys.boot_completed`），然后重复 5.2。
 标准形态应该由系统直接拉起；guard 形态依赖守护服务或用户按一次主页键。
 
+v1.3.3 起多了「开机自愈」：这台固件开机会清掉 secure 设置里的无障碍与屏保开关，应用会自己写回。
+开机后如果**又**回到原厂桌面，先查授权，再怀疑别的：
+
+```sh
+adb -s <TV_IP>:5555 shell dumpsys package app.xingchuan.tv | grep WRITE_SECURE_SETTINGS   # 必须 granted=true
+adb -s <TV_IP>:5555 shell settings get secure enabled_accessibility_services               # 应含 GuardService
+adb -s <TV_IP>:5555 shell settings get secure screensaver_enabled                          # 应为 1
+```
+
+缺授权就补一次 `pm grant`；三项都在却仍是厂商桌面，说明厂商这次抢得晚，按一次主页键即可（守护会接管）。
+
 ---
 
 ## 6. 桌面守护（可选，默认关闭）
@@ -244,7 +255,8 @@ Android 13+ 侧载应用的无障碍服务默认被「受限设置」挡住，�
    adb -s <TV_IP>:5555 uninstall app.xingchuan.tv
    ```
 
-星川不会改屏保、不会注册通知监听、不会禁用任何应用，所以回滚只需处理 HOME 与无障碍两项。
+星川不改通知监听、不禁用任何应用；屏保只在用户主动选样式时接管（选「关闭」会还回原组件），
+所以回滚要处理的三项是：HOME、无障碍、屏保（如果开过）。
 
 ---
 
@@ -500,6 +512,60 @@ v1.0.1 相比 v1.0.0 只有构建侧变化（R8 混淆 + 壁纸预缩）和四�
 `starriver` 偏好 `screensaver_prev_timeout`，选「关闭」还原。
 
 ---
+
+## v1.3.3：开机自愈（2026-11-15 实测）
+
+**现象**：装好、守护也开过、屏保也用过，电视重启一次后「又是原厂桌面，屏保也不出来了」。
+
+**根因**：这台固件（Android 9 / `com.stv.*`）开机时把 **secure** 设置恢复默认，
+而 **system** 命名空间不动：
+
+| 项 | 命名空间 | 重启后 |
+|---|---|---|
+| `enabled_accessibility_services` | secure | 被清空（`null`） |
+| `accessibility_enabled` | secure | 变 `0` |
+| `screensaver_enabled` | secure | 变 `0` |
+| `screensaver_components` | secure | 保留 |
+| `screen_off_timeout` | system | 保留（`180000`） |
+
+守护是 `enabled_accessibility_services` 驱动的，被清掉即失效；厂商的 `com.stv.appdaemon`
+本来就用显式组件拉起自家桌面，于是开机后没人再抢回来。
+
+**对策**（`BootReceiver` + `MainActivity` 两处都跑，`WRITE_SECURE_SETTINGS` 已在屏保时授权过）：
+
+1. `Guard.repair()`：用户开过守护（新偏好 `guard_on`）且没主动关（`guard_off`），
+   就把自己**追加**进 `enabled_accessibility_services`（其余服务原样保留）并置 `accessibility_enabled=1`。
+2. `ScreenSaver.ensureApplied()`：样式不是「关闭」时，把 `screensaver_components` 与
+   `screensaver_enabled` 一起写回。
+3. `ScreenSaver.ensureIdleTimeout()`：待机时间回 `180000`。
+4. 直接 `startActivity(MainActivity)`（standard 形态；guard 形态只在用户要守护时才拉）。
+5. `GuardService.onServiceConnected()`：若绑上时距开机不到 120 秒，1.2 秒后补发一次
+   `GLOBAL_ACTION_HOME`——开机时固件桌面**已经**在前台，不会再发窗口切换事件，纯监听救不回来。
+   超过 120 秒不动，避免用户看着片子被切回桌面。
+
+**验证**（2026-11-15，`192.168.0.24:5555`，v1.3.3）：
+
+| 项 | 结果 | 依据 |
+|---|---|---|
+| 自愈逻辑 | 通过 | `settings delete secure enabled_accessibility_services` + `screensaver_enabled=0` 后重开桌面，三项自动写回 `GuardService / 1 / 1`，待机时间仍 `180000` |
+| 真开机 | 通过 | `adb reboot` 后 uptime 66 秒时 `mCurrentFocus` 已是 `app.xingchuan.tv/.MainActivity`；+60 秒复查仍是星川，`mResumedActivity` 也为星川 |
+| 开机后守护 | 通过 | 开机后 `dumpsys accessibility` 含 `Service[label=星川桌面守护]`；按一次 `KEYCODE_HOME`，前台仍是星川 |
+| 开机后屏保 | 通过（设置项） | `screensaver_components=app.xingchuan.tv/.ScreensaverService`、`screensaver_enabled=1`；实际待机画面未重拍（一进屏保 adbd 就断） |
+
+**踩坑**：
+
+- `settings put secure enabled_accessibility_services ''` 写空串**不会清空**，读回还是原值；
+  要清得用 `settings delete secure ...`。复现重置现象时别被这条误导。
+- `am broadcast -a android.intent.action.BOOT_COMPLETED` 从 shell 发是 `SecurityException`，
+  开机路径只能靠真重启验证。
+- 自愈依赖 `WRITE_SECURE_SETTINGS`（`dumpsys package app.xingchuan.tv | grep WRITE_SECURE_SETTINGS`
+  应看到 `granted=true`）。覆盖安装会保留授权；换签名卸载重装后要重新 `pm grant`，
+  否则自愈静默失败、表面现象与这次一模一样。
+- `guard_on` 是「开过」的记忆，只在新版本第一次绑上守护时写入。若从更旧版本升级且守护当时是关的，
+  开机自愈不会替用户擅自打开——这是有意的，别改成默认开启。
+
+---
+
 
 ## 附：一键脚本
 

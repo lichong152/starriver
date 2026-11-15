@@ -25,12 +25,62 @@ object Guard {
     private const val PREFS = "starriver"
     private const val KEY_GUARD_OFF = "guard_off"
 
+    /**
+     * 「用户曾经把守护开起来过」的记忆。
+     *
+     * 系统无障碍开关仍是运行状态的唯一依据；这个标记只用来回答另一个问题：
+     * 开机后开关被固件清掉时，该不该自己写回来。用户在设置里主动关过（guard_off）
+     * 就不会再写，避免把用户的关闭动作当成故障去「修复」。
+     */
+    private const val KEY_GUARD_ON = "guard_on"
+
     private fun sp(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun enabled(ctx: Context): Boolean = !sp(ctx).getBoolean(KEY_GUARD_OFF, false) && serviceEnabled(ctx)
 
     fun setEnabled(ctx: Context, on: Boolean) {
         sp(ctx).edit().putBoolean(KEY_GUARD_OFF, !on).apply()
+    }
+
+    /** 用户是否表达过「要守护」：开过、且没主动关。 */
+    fun wanted(ctx: Context): Boolean =
+        !sp(ctx).getBoolean(KEY_GUARD_OFF, false) && sp(ctx).getBoolean(KEY_GUARD_ON, false)
+
+    /** 观察到服务确实绑上了就记一笔，作为开机自愈的依据。 */
+    fun noteOn(ctx: Context) {
+        if (serviceEnabled(ctx) && !sp(ctx).getBoolean(KEY_GUARD_ON, false)) {
+            sp(ctx).edit().putBoolean(KEY_GUARD_ON, true).apply()
+        }
+    }
+
+    /**
+     * 开机自愈：这台电视的固件会在开机时把 secure 设置恢复默认，
+     * `enabled_accessibility_services` 与 `accessibility_enabled` 一起被清空，
+     * 守护就永久失效了（表现为「重启后回到原厂桌面」）。这里用已授权的
+     * WRITE_SECURE_SETTINGS 把自己追加回去，其余无障碍服务原样保留。
+     *
+     * @return true 表示现在服务是开着的（本来就在、或刚写回成功）
+     */
+    fun repair(ctx: Context): Boolean {
+        if (!wanted(ctx)) return false
+        if (serviceEnabled(ctx)) return true
+        val self = "${ctx.packageName}/${GuardService::class.java.name}"
+        return runCatching {
+            val raw = Settings.Secure.getString(
+                ctx.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            ).orEmpty()
+            val list = raw.split(':').map { it.trim() }.filter { it.isNotEmpty() }
+            if (list.none { it.equals(self, ignoreCase = true) }) {
+                Settings.Secure.putString(
+                    ctx.contentResolver,
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                    (list + self).joinToString(":"),
+                )
+            }
+            Settings.Secure.putInt(ctx.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+            serviceEnabled(ctx)
+        }.getOrDefault(false)
     }
 
     /** 本应用的无障碍服务是否已在系统里勾选。 */
@@ -61,10 +111,25 @@ class GuardService : AccessibilityService() {
     private var homePackages: Set<String> = emptySet()
     private var homeResolvedAt = 0L
 
+    private companion object {
+        /** 开机后多久之内绑上算「开机自愈」，可以主动发 HOME。 */
+        const val BOOT_GRACE_MS = 120_000L
+    }
+
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        Guard.noteOn(this)
         homePackages = resolveHomePackages()
         homeResolvedAt = SystemClock.elapsedRealtime()
+        // 开机两分钟内才绑上，说明是 BootReceiver 自愈把我们拉起来的。此刻固件多半已经把
+        // 自己的桌面顶到前台了，而「已经在前台」不会再产生窗口切换事件，光靠监听救不回来。
+        // 主动发一次 HOME：系统偏好里星川是默认桌面，等于回到自己；过了这个窗口期就不动，
+        // 免得用户开着别的应用时被莫名切回桌面。
+        if (SystemClock.elapsedRealtime() < BOOT_GRACE_MS) {
+            mainHandler.postDelayed({ runCatching { performGlobalAction(GLOBAL_ACTION_HOME) } }, 1200L)
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
