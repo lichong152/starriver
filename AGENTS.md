@@ -626,3 +626,19 @@ TV=<电视IP> FORM=guard tools/install.sh # guard
 ```
 
 两个脚本都**不会**重启、卸载、清空数据或停用原厂桌面；需要时由人按上面各节手动执行。
+
+---
+
+## 官网（下载页）怎么对外给链接
+
+**固定可用的地址**是把静态页放进智能家居后台的 `public/xingchuan/`：
+
+```
+https://smart-home-hub-07039.app.workbuddy.host/xingchuan/?sharecode=OVUS5VJB42
+```
+
+改完 `starriver/site/` 之后跑 `tools/publish-site.sh` 同步过去，再到那个工作区
+（`D:\WorkBuddy\2026-11-03-14-24-22\smart-home-backend`）执行一次 sites 发布即可。
+
+EdgeOne Makers 那条 `*.edgeone.cool` 链接**带 `eo_token`，几小时后必 401**，
+只适合自己临时看，不能发给别人；项目目前也没有绑定可公开访问的域名。
